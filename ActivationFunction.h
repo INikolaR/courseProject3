@@ -17,7 +17,7 @@ public:
     std::vector<double> evaluate1(const std::vector<double>& x) const;
 
 private:
-    static constexpr double LeakyReLUCoefficient = 0.01;
+    static constexpr double LeakyReLUCoefficient = 0.1;
 
     const std::function<double(double)> f0_;
     const std::function<double(double)> f1_;
