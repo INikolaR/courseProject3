@@ -38,6 +38,12 @@ void operator*=(Vector& a, double b) {
     }
 }
 
+void operator+=(Matrix& a, const Matrix& b) {
+    for (size_t i = 0; i < std::min(a.size(), b.size()); ++i) {
+        a[i] += b[i];
+    }
+}
+
 Vector operator*(const Vector& a, const Vector& b) {
     Vector mult;
     mult.reserve(std::min(a.size(), b.size()));

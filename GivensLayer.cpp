@@ -17,7 +17,9 @@ GivensLayer::GivensLayer(size_t in, size_t out)
           rnd_.givensAngleMatrix(std::min(min_n_m_, m_ - 1), m_ - 1))),
       beta_(std::move(
           rnd_.givensAngleMatrix(std::min(min_n_m_, n_ - 1), n_ - 1))),
+      //   beta_(std::move(Matrix{{0, -0.785398163397446}})),
       sigma_(std::move(rnd_.singularValues(min_n_m_))) {
+    // sigma_(std::move(Vector{1.414213562})) {
     size_t r = 0;
 }
 
@@ -32,6 +34,7 @@ size_t GivensLayer::sizeOut() const {
 Vector GivensLayer::passForward(const Vector& x) const {
     assert(x.size() == n_ &&
            "size of x should be 1 more than input size of layer");
+    assert(!x.empty() && "x should be not empty");
     assert(x[x.size() - 1] == 1 && "last elem of x should be equal 1");
     Vector temp(x);
     for (auto it = beta_.begin(); it != beta_.end(); ++it) {
@@ -102,9 +105,11 @@ void GivensLayer::updateBeta(const Matrix& beta, double step) {
     assert(beta.size() == beta_.size() &&
            "different shapes of parameter and graient");
     for (size_t i = 0; i < beta_.size(); ++i) {
-        assert(beta[i].size() == beta_[i].size() &&
+        assert(beta[i].size() == beta_[beta_.size() - i - 1].size() &&
                "different shapes of parameter and graient");
-        updateVector(beta_[i], beta[i], step);
+        Vector b(beta[beta_.size() - i - 1]);
+        std::reverse(b.begin(), b.end());
+        updateVector(beta_[i], b, step);
     }
 }
 
@@ -128,8 +133,8 @@ void GivensLayer::ApplyGs(const Vector& angles, Vector& v) const {
 }
 
 void GivensLayer::ReverseApplyGs(const Vector& angles, Vector& v) const {
-    for (size_t i = angles.size() - 1; i >= 0; --i) {
-        G(angles[i], i + v.size() - angles.size(), v);
+    for (size_t i = angles.size(); i > 0; --i) {
+        G(angles[i - 1], i + v.size() - angles.size() - 1, v);
     }
 }
 
@@ -139,7 +144,7 @@ Vector GivensLayer::CalcVectorD(const Vector& alphas, Vector& u, Vector& z,
     d.reserve(alphas.size());
     for (size_t i = 0; i < alphas.size(); ++i) {
         size_t row = z_size - 1 - i;
-        d.emplace_back(z[row - 1] * u[row] - z[row] * u[row - 1]);
+        d.emplace_back(z[row] * u[row - 1] - z[row - 1] * u[row]);
         RG(alphas[i], row, u);
         G(-alphas[i], row, z);
     }

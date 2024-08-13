@@ -30,7 +30,7 @@ Vector GivensNet::predict(const Vector& x) const {
     for (; linear_it != linear_layers_.end() &&
            non_linear_it != non_linear_layers_.end();
          ++linear_it, ++non_linear_it) {
-        temp.emplace_back(1);
+        temp.emplace_back(1.0);
         temp = linear_it->passForward(temp);
         temp = non_linear_it->evaluate0(temp);
     }
@@ -38,20 +38,41 @@ Vector GivensNet::predict(const Vector& x) const {
 }
 
 void GivensNet::fit(const std::vector<TrainUnit>& dataset,
-                    const LossFunction& loss, size_t n_of_epochs, double step) {
+                    const LossFunction& loss, size_t n_of_epochs, int batch_size, double step) {
     for (size_t i = 0; i < n_of_epochs; ++i) {
-        trainOneEpoch(dataset, loss, step);
+        trainOneEpoch(dataset, loss, batch_size, step);
     }
 }
 
 void GivensNet::trainOneEpoch(const std::vector<TrainUnit>& dataset,
-                              const LossFunction& loss, double step) {
-    for (const TrainUnit& train_unit : dataset) {
-        trainOneUnit(train_unit.x, train_unit.y, loss, step);
+                              const LossFunction& loss, int batch_size, double step) {
+    assert(batch_size > 0);
+    for (auto it = dataset.begin(); it < dataset.end(); it += batch_size) {
+        trainOneBatch(it, (it + batch_size < dataset.end() ? it + batch_size : dataset.end()), loss, step / batch_size);
     }
 }
 
-void GivensNet::trainOneUnit(const Vector& x, const Vector& y,
+void GivensNet::trainOneBatch(std::vector<TrainUnit>::const_iterator begin,
+                              std::vector<TrainUnit>::const_iterator end,
+                              const LossFunction& loss, double step) {
+    if (begin == end) {
+        return;
+    }
+    std::vector<Gradient> to_update = trainOneUnit(begin->x, begin->y, loss, step);
+    for (auto it = begin + 1; it != end; ++it) {
+        std::vector<Gradient> add_to_update = trainOneUnit(it->x, it->y, loss, step);
+        addGradients(to_update, add_to_update);
+    }
+    auto it_layers = linear_layers_.begin();
+    auto it_g = to_update.rbegin();
+    for (; it_layers != linear_layers_.end() && it_g != to_update.rend(); ++it_layers, ++it_g) {
+        it_layers->updateAlpha(it_g->U, step);
+        it_layers->updateBeta(it_g->V, step);
+        it_layers->updateSigma(it_g->sigma, step);
+    }
+}
+
+std::vector<Gradient> GivensNet::trainOneUnit(const Vector& x, const Vector& y,
                              const LossFunction& loss, double step) {
     assert(x.size() == in_ && "bad input vector size");
     Vector temp;
@@ -74,6 +95,10 @@ void GivensNet::trainOneUnit(const Vector& x, const Vector& y,
         temp = non_linear_it->evaluate0(temp);
     }
     Vector u = loss.evaluate1(temp, y);
+
+    std::vector<Gradient> to_update;
+    to_update.reserve(linear_layers_.size());
+
     auto linear_layer_it = linear_layers_.rbegin();
     auto non_linear_layer_it = non_linear_layers_.rbegin();
     auto linear_in_it = linear_in.rbegin();
@@ -84,12 +109,20 @@ void GivensNet::trainOneUnit(const Vector& x, const Vector& y,
            non_linear_in_it != non_linear_in.rend();
          ++linear_layer_it, ++non_linear_layer_it, ++linear_in_it,
          ++non_linear_in_it) {
+        u.resize(linear_layer_it->sizeOut());
         u *= non_linear_layer_it->evaluate1(*non_linear_in_it);
         Gradient g =
             linear_layer_it->passBackwardAndCalcGradient(u, *non_linear_in_it);
-        linear_layer_it->updateAlpha(g.U, step);
-        linear_layer_it->updateSigma(g.sigma, step);
-        linear_layer_it->updateBeta(g.V, step);
+        to_update.emplace_back(g);
+    }
+    return to_update;
+}
+
+void GivensNet::addGradients(std::vector<Gradient>& a, const std::vector<Gradient>& b) {
+    for (size_t i = 0; i < std::min(a.size(), b.size()); ++i) {
+        a[i].U += b[i].U;
+        a[i].V += b[i].V;
+        a[i].sigma += b[i].sigma;
     }
 }
 
