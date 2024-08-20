@@ -13,6 +13,8 @@ public:
     Vector predict(const Vector& x) const;
     void fit(const std::vector<TrainUnit>& dataset, const LossFunction& loss,
              size_t n_of_epochs, int batch_size, double step);
+    double loss(const std::vector<TrainUnit>& test_dataset,
+                const LossFunction& loss) const;
 
 private:
     void trainOneEpoch(const std::vector<TrainUnit>& dataset,
