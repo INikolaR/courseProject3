@@ -97,4 +97,19 @@ void RG(double angle, size_t row, Vector& v) {
     v[row] = t2;
 }
 
+size_t getMaxInd(const Vector& a) {
+    if (a.empty()) {
+        return 0;
+    }
+    size_t max_index = 0;
+    double max = a[0];
+    for (size_t i = 1; i < a.size(); ++i) {
+        if (a[i] > max) {
+            max = a[i];
+            max_index = i;
+        }
+    }
+    return max_index;
+}
+
 }  // namespace neural_network

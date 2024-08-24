@@ -17,5 +17,6 @@ void updateVector(Vector& v, const Vector& dv, double step);
 double dot(const Vector& a, const Vector& b);
 void G(double angle, size_t row, Vector& v);
 void RG(double angle, size_t row, Vector& v);
+size_t getMaxInd(const Vector& a);
 
 }  // namespace neural_network

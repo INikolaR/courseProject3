@@ -15,6 +15,7 @@ public:
              size_t n_of_epochs, int batch_size, double step);
     double loss(const std::vector<TrainUnit>& test_dataset,
                 const LossFunction& loss) const;
+    double accuracy(const std::vector<TrainUnit> test_dataset) const;
 
 private:
     void trainOneEpoch(const std::vector<TrainUnit>& dataset,

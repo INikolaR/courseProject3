@@ -17,9 +17,7 @@ GivensLayer::GivensLayer(size_t in, size_t out)
           rnd_.givensAngleMatrix(std::min(min_n_m_, m_ - 1), m_ - 1))),
       beta_(std::move(
           rnd_.givensAngleMatrix(std::min(min_n_m_, n_ - 1), n_ - 1))),
-      //   beta_(std::move(Matrix{{0, -0.785398163397446}})),
       sigma_(std::move(rnd_.singularValues(min_n_m_))) {
-    // sigma_(std::move(Vector{1.414213562})) {
     size_t r = 0;
 }
 
@@ -108,6 +106,7 @@ void GivensLayer::updateBeta(const Matrix& beta, double step) {
         assert(beta[i].size() == beta_[beta_.size() - i - 1].size() &&
                "different shapes of parameter and graient");
         Vector b(beta[beta_.size() - i - 1]);
+        
         std::reverse(b.begin(), b.end());
         updateVector(beta_[i], b, step);
     }
