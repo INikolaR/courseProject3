@@ -66,7 +66,7 @@ Gradient GivensLayer::passBackwardAndCalcGradient(Vector& u, Vector& z) const {
     assert(z.size() == m_ + n_ - min_n_m_ &&
            "z size should be equal to max(input size; output size) of layer");
     Matrix d_alpha;
-    d_alpha.reserve(alpha_.size());
+    d_alpha.reserve(alpha_.size() * (m_ - 1));
     for (auto it = alpha_.begin(); it != alpha_.end(); ++it) {
         d_alpha.emplace_back(CalcVectorD(*it, u, z, m_));
     }
@@ -82,7 +82,7 @@ Gradient GivensLayer::passBackwardAndCalcGradient(Vector& u, Vector& z) const {
     u *= sigma_;
     u.resize(n_);
     Matrix d_beta;
-    d_beta.reserve(beta_.size());
+    d_beta.reserve(beta_.size() * (n_ - 1));
     for (auto it = beta_.rbegin(); it != beta_.rend(); ++it) {
         d_beta.emplace_back(ReverseCalcVectorD(*it, u, z, n_));
     }

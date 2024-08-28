@@ -59,7 +59,7 @@ double GivensNet::accuracy(const std::vector<TrainUnit> test_dataset) const {
     assert(!test_dataset.empty() && "dataset should not be empty");
     double correct_answers = 0;
     for (const TrainUnit& unit : test_dataset) {
-        correct_answers += unit.y[getMaxInd(unit.x)];
+        correct_answers += unit.y[getMaxInd(predict(unit.x))];
     }
     return correct_answers / static_cast<double>(test_dataset.size());
 }

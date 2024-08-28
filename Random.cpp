@@ -24,7 +24,8 @@ Matrix Random::givensAngleMatrix(size_t rows, size_t cols) {
 
 Vector Random::singularValues(size_t length) {
     std::normal_distribution<double> normal_d;
-    Vector generated(length, normal_d(engine_));
+    Vector generated(length);
+    std::generate(generated.begin(), generated.end(), [&](){ return normal_d(engine_); });
     std::sort(generated.begin(), generated.end());
     return generated;
 }

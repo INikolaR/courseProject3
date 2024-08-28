@@ -8,64 +8,6 @@
 
 namespace neural_network {
 
-void simple_test_loss(const std::string& test_name, GivensNet& net,
-                      const std::vector<TrainUnit>& train_dataset,
-                      const LossFunction& train_loss,
-                      const std::vector<TrainUnit>& test_dataset,
-                      const LossFunction& test_loss, size_t n_of_epochs,
-                      int batch_size, double step) {
-    std::cout << "TEST " << test_name << ":\n";
-    auto start = std::chrono::system_clock::now();
-    net.fit(train_dataset, train_loss, n_of_epochs, batch_size, step);
-    auto end = std::chrono::system_clock::now();
-    auto time =
-        std::chrono::duration_cast<std::chrono::milliseconds>(end - start)
-            .count();
-    std::cout << "    time: " << time / 1000 << "." << time % 1000
-              << " s\n    loss: " << net.loss(test_dataset, test_loss)
-              << "\n    epochs: " << n_of_epochs
-              << "\n    batch size: " << batch_size << "\n    step: " << step
-              << "\n";
-}
-
-void test_echo() {
-    std::vector<TrainUnit> dataset{{{1}, {1}}, {{2}, {2}}, {{3}, {3}},
-                                   {{4}, {4}}, {{5}, {5}}, {{6}, {6}},
-                                   {{7}, {7}}, {{8}, {8}}};
-    GivensNet net(1, 1, ActivationFunction::LeakyReLU());
-    simple_test_loss("ECHO", net, dataset, dataset, LossFunction::Euclid(), 100,
-                     1, 0.02);
-}
-
-void test_sum() {
-    std::vector<TrainUnit> dataset{
-        {{1, 1}, {2}}, {{1, 2}, {3}}, {{1, 3}, {4}}, {{1, 4}, {5}},
-        {{2, 1}, {3}}, {{2, 2}, {4}}, {{2, 3}, {5}}, {{2, 4}, {6}},
-        {{3, 1}, {4}}, {{3, 2}, {5}}, {{3, 3}, {6}}, {{3, 4}, {7}},
-        {{4, 1}, {5}}, {{4, 2}, {6}}, {{4, 3}, {7}}, {{4, 4}, {8}}};
-    GivensNet net(2, 1, ActivationFunction::LeakyReLU());
-    simple_test_loss("SUM", net, dataset, dataset, LossFunction::Euclid(), 1000,
-                     16, 0.05);
-}
-
-void test_sum_multi_layers() {
-    std::vector<TrainUnit> dataset{
-        {{1, 1}, {2}}, {{1, 2}, {3}}, {{1, 3}, {4}}, {{1, 4}, {5}},
-        {{2, 1}, {3}}, {{2, 2}, {4}}, {{2, 3}, {5}}, {{2, 4}, {6}},
-        {{3, 1}, {4}}, {{3, 2}, {5}}, {{3, 3}, {6}}, {{3, 4}, {7}},
-        {{4, 1}, {5}}, {{4, 2}, {6}}, {{4, 3}, {7}}, {{4, 4}, {8}}};
-    GivensNet net(2, 3, ActivationFunction::LeakyReLU());
-    net.AddLayer(1, ActivationFunction::LeakyReLU());
-    simple_test_loss("SUM MULTI LAYERS", net, dataset, dataset,
-                     LossFunction::Euclid(), 1000, 1, 0.015);
-}
-
-void run_all_tests() {
-    test_echo();
-    test_sum();
-    test_sum_multi_layers();
-}
-
 int reverse_int(int i) {
     unsigned char c1 = i & 255;
     unsigned char c2 = (i >> 8) & 255;
@@ -138,12 +80,85 @@ std::vector<TrainUnit> parseMNISTDataset(
             "Different number of rows in images and labels!");
     }
 
+    std::cout << "NoL:" << number_of_labels << std::endl;
+
     std::vector<TrainUnit> dataset(0);
-    for (int i = 0; i < number_of_labels; i++) {
+    for (int i = 0; i < number_of_labels / 100; i++) {
         dataset.push_back(read_mnist_train_unit(file_images, file_labels,
                                                 size_of_mnist_image));
     }
     return dataset;
+}
+
+void simple_test_loss(const std::string& test_name, GivensNet& net,
+                      const std::vector<TrainUnit>& train_dataset,
+                      const LossFunction& train_loss,
+                      const std::vector<TrainUnit>& test_dataset,
+                      const LossFunction& test_loss, size_t n_of_epochs,
+                      int batch_size, double step) {
+    std::cout << "TEST " << test_name << ":\n";
+    auto start = std::chrono::system_clock::now();
+    net.fit(train_dataset, train_loss, n_of_epochs, batch_size, step);
+    auto end = std::chrono::system_clock::now();
+    auto time =
+        std::chrono::duration_cast<std::chrono::milliseconds>(end - start)
+            .count();
+    std::cout << "    time: " << time / 1000 << "." << time % 1000
+              << " s\n    loss: " << net.loss(test_dataset, test_loss)
+              << "\n    epochs: " << n_of_epochs
+              << "\n    batch size: " << batch_size << "\n    step: " << step
+              << "\n";
+}
+
+void simple_test_accuracy(const std::string& test_name, GivensNet& net,
+                          const std::vector<TrainUnit>& train_dataset,
+                          const LossFunction& train_loss,
+                          const std::vector<TrainUnit>& test_dataset,
+                          size_t n_of_epochs, int batch_size, double step) {
+    std::cout << "TEST " << test_name << ":\n";
+    auto start = std::chrono::system_clock::now();
+    net.fit(train_dataset, train_loss, n_of_epochs, batch_size, step);
+    auto end = std::chrono::system_clock::now();
+    auto time =
+        std::chrono::duration_cast<std::chrono::milliseconds>(end - start)
+            .count();
+    std::cout << "    time: " << time / 1000 << "." << time % 1000
+              << " s\n    accuracy: " << net.accuracy(test_dataset)
+              << "\n    epochs: " << n_of_epochs
+              << "\n    batch size: " << batch_size << "\n    step: " << step
+              << "\n";
+}
+
+void test_echo() {
+    std::vector<TrainUnit> dataset{{{1}, {1}}, {{2}, {2}}, {{3}, {3}},
+                                   {{4}, {4}}, {{5}, {5}}, {{6}, {6}},
+                                   {{7}, {7}}, {{8}, {8}}};
+    GivensNet net(1, 1, ActivationFunction::LeakyReLU());
+    simple_test_loss("ECHO", net, dataset, LossFunction::Euclid(), dataset,
+                     LossFunction::Euclid(), 100, 1, 0.02);
+}
+
+void test_sum() {
+    std::vector<TrainUnit> dataset{
+        {{1, 1}, {2}}, {{1, 2}, {3}}, {{1, 3}, {4}}, {{1, 4}, {5}},
+        {{2, 1}, {3}}, {{2, 2}, {4}}, {{2, 3}, {5}}, {{2, 4}, {6}},
+        {{3, 1}, {4}}, {{3, 2}, {5}}, {{3, 3}, {6}}, {{3, 4}, {7}},
+        {{4, 1}, {5}}, {{4, 2}, {6}}, {{4, 3}, {7}}, {{4, 4}, {8}}};
+    GivensNet net(2, 1, ActivationFunction::LeakyReLU());
+    simple_test_loss("SUM", net, dataset, LossFunction::Euclid(), dataset,
+                     LossFunction::Euclid(), 1000, 16, 0.05);
+}
+
+void test_sum_multi_layers() {
+    std::vector<TrainUnit> dataset{
+        {{1, 1}, {2}}, {{1, 2}, {3}}, {{1, 3}, {4}}, {{1, 4}, {5}},
+        {{2, 1}, {3}}, {{2, 2}, {4}}, {{2, 3}, {5}}, {{2, 4}, {6}},
+        {{3, 1}, {4}}, {{3, 2}, {5}}, {{3, 3}, {6}}, {{3, 4}, {7}},
+        {{4, 1}, {5}}, {{4, 2}, {6}}, {{4, 3}, {7}}, {{4, 4}, {8}}};
+    GivensNet net(2, 3, ActivationFunction::LeakyReLU());
+    net.AddLayer(1, ActivationFunction::LeakyReLU());
+    simple_test_loss("SUM MULTI LAYERS", net, dataset, LossFunction::Euclid(),
+                     dataset, LossFunction::Euclid(), 1000, 1, 0.015);
 }
 
 void test_mnist() {
@@ -159,66 +174,19 @@ void test_mnist() {
     std::chrono::steady_clock::time_point begin;
     std::chrono::steady_clock::time_point end;
 
-    std::cout << "TEST 1 | Architecture: 784 -> Sigmoid -> 256 -> Sigmoid -> "
-                 "10 | Using batches of 60 elements during 10 epochs\n ";
-    std::cout << "Using constant step length = 0.3\n";
     GivensNet net(784, 256, ActivationFunction::Sigmoid());
     net.AddLayer(10, ActivationFunction::Sigmoid());
-    simple_test_loss("MNIST", net, train, test, LossFunction::Euclid(), 1, 6,
-                     0.01);
+    for (size_t i = 0; i < 2000; ++i) {
+        simple_test_loss("MNIST", net, train, LossFunction::Euclid(), test,
+                         LossFunction::Euclid(), 1, 6, 0.001);
+    }
+}
 
-    begin = std::chrono::steady_clock::now();
-    net1.fit(train, Net::Euclid(), 60, 10, Optimizer::Constant(0.3));
-    end = std::chrono::steady_clock::now();
-
-    std::cout
-        << "Time: "
-        << std::chrono::duration_cast<std::chrono::seconds>(end - begin).count()
-        << "s\n";
-    std::cout << "MSE on train: " << net1.getLoss(train, Net::Euclid()) << "\n";
-    std::cout << "Accuracy on train: " << net1.accuracy(train) * 100 << "%\n";
-    std::cout << "MSE on test: " << net1.getLoss(test, Net::Euclid()) << "\n";
-    std::cout << "Accuracy on test: " << net1.accuracy(test) * 100 << "%\n";
-
-    std::cout << "TEST 2 | Architecture: 784 -> Sigmoid -> 256 -> Sigmoid ->10 "
-                 "| Using batches of 6 elements during 10 epochs\n";
-    std::cout
-        << " Using momentum with params: step_length = 0.3, momentum = 0.9\n ";
-    Net net2{{784, 256, 10}, {Net::Sigmoid(), Net::Sigmoid()}};
-
-    begin = std::chrono::steady_clock::now();
-    net2.fit(train, Net::Euclid(), 6, 10, Optimizer::Momentum(0.3, 0.9));
-    end = std::chrono::steady_clock::now();
-
-    std::cout
-        << "Time: "
-        << std::chrono::duration_cast<std::chrono::seconds>(end - begin).count()
-        << "s\n";
-
-    std::cout << "MSE on train: " << net2.getLoss(train, Net::Euclid()) << "\n";
-    std::cout << "Accuracy on train: " << net2.accuracy(train) * 100 << "%\n";
-    std::cout << "MSE on test: " << net2.getLoss(test, Net::Euclid()) << "\n";
-    std::cout << "Accuracy on test: " << net2.accuracy(test) * 100 << "%\n";
-
-    std::cout << "TEST 3 | Architecture: 784 -> Sigmoid -> 256 -> Sigmoid -> "
-                 "10 | Using batches of 6 elements during 10 epochs\n";
-    std::cout << "Using Adam optimizer with params: start_step = 0.003, beta1 "
-                 "= 0.9, beta2 = 0.999, epsilon = 1e-8\n";
-    Net net3{{784, 256, 10}, {Net::Sigmoid(), Net::Sigmoid()}};
-
-    begin = std::chrono::steady_clock::now();
-    net3.fit(train, Net::Euclid(), 6, 20,
-             Optimizer::Adam(0.005, 0.9, 0.999, 1e-8));
-    end = std::chrono::steady_clock::now();
-
-    std::cout
-        << "Time: "
-        << std::chrono::duration_cast<std::chrono::seconds>(end - begin).count()
-        << "s\n";
-    std::cout << "MSE on train: " << net3.getLoss(train, Net::Euclid()) << "\n";
-    std::cout << "Accuracy on train: " << net3.accuracy(train) * 100 << "%\n";
-    std::cout << "MSE on test: " << net3.getLoss(test, Net::Euclid()) << "\n";
-    std::cout << "Accuracy on test: " << net3.accuracy(test) * 100 << "%\n";
+void run_all_tests() {
+    test_echo();
+    test_sum();
+    test_sum_multi_layers();
+    test_mnist();
 }
 
 }  // namespace neural_network
