@@ -69,10 +69,9 @@ void GivensNet::trainOneEpoch(const std::vector<TrainUnit>& dataset,
                               double step) {
     assert(batch_size > 0);
     for (auto it = dataset.begin(); it < dataset.end(); it += batch_size) {
-        trainOneBatch(
-            it,
-            (it + batch_size < dataset.end() ? it + batch_size : dataset.end()),
-            loss, step / batch_size);
+        auto end_of_batch =
+            (it + batch_size < dataset.end() ? it + batch_size : dataset.end());
+        trainOneBatch(it, end_of_batch, loss, step / static_cast<double>(end_of_batch - it));
     }
 }
 

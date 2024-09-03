@@ -73,6 +73,13 @@ void updateVector(Vector& v, const Vector& dv, double step) {
     }
 }
 
+void updateReversedVector(Vector& v, const Vector& dv, double step) {
+    assert(v.size() == dv.size());
+    for (size_t i = 0; i < v.size(); ++i) {
+        v[i] -= step * dv[v.size() - i - 1];
+    }
+}
+
 double dot(const Vector& a, const Vector& b) {
     double dot = 0.0;
     for (size_t i = 0; i < std::min(a.size(), b.size()); ++i) {

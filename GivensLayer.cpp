@@ -105,10 +105,7 @@ void GivensLayer::updateBeta(const Matrix& beta, double step) {
     for (size_t i = 0; i < beta_.size(); ++i) {
         assert(beta[i].size() == beta_[beta_.size() - i - 1].size() &&
                "different shapes of parameter and graient");
-        Vector b(beta[beta_.size() - i - 1]);
-        
-        std::reverse(b.begin(), b.end());
-        updateVector(beta_[i], b, step);
+        updateReversedVector(beta_[beta_.size() - i - 1], beta[i], step);
     }
 }
 
