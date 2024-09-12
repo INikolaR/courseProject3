@@ -1,6 +1,7 @@
 #include "GivensNet.h"
 
 #include <cassert>
+#include <iostream>
 
 #include "VectorOperations.h"
 
@@ -140,6 +141,7 @@ std::vector<Gradient> GivensNet::trainOneUnit(const Vector& x, const Vector& y,
         u *= non_linear_layer_it->evaluate1(*non_linear_in_it);
         Gradient g =
             linear_layer_it->passBackwardAndCalcGradient(u, *non_linear_in_it);
+            // linear_layer_it->passBackwardAndCalcGradient(u, *linear_in_it);
         to_update.emplace_back(g);
     }
     return to_update;

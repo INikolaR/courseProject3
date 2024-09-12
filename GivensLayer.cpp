@@ -18,7 +18,6 @@ GivensLayer::GivensLayer(size_t in, size_t out)
       beta_(std::move(
           rnd_.givensAngleMatrix(std::min(min_n_m_, n_ - 1), n_ - 1))),
       sigma_(std::move(rnd_.singularValues(min_n_m_))) {
-    size_t r = 0;
 }
 
 size_t GivensLayer::sizeIn() const {
@@ -36,12 +35,12 @@ Vector GivensLayer::passForward(const Vector& x) const {
     assert(x[x.size() - 1] == 1 && "last elem of x should be equal 1");
     Vector temp(x);
     for (auto it = beta_.begin(); it != beta_.end(); ++it) {
-        ApplyGs(*it, temp);
+        ApplyGs(*it, temp, n_);
     }
     temp.resize(m_);
     temp *= sigma_;
     for (auto it = alpha_.rbegin(); it != alpha_.rend(); ++it) {
-        ReverseApplyGs(*it, temp);
+        ReverseApplyGs(*it, temp, m_);
     }
     return temp;
 }
@@ -52,11 +51,12 @@ Vector GivensLayer::passForwardWithoutShrinking(const Vector& x) const {
     assert(x[x.size() - 1] == 1 && "last elem of x should be equal 1");
     Vector temp(x);
     for (auto it = beta_.begin(); it != beta_.end(); ++it) {
-        ApplyGs(*it, temp);
+        ApplyGs(*it, temp, n_);
     }
+    temp.resize(n_ + m_ - min_n_m_);
     temp *= sigma_;
     for (auto it = alpha_.rbegin(); it != alpha_.rend(); ++it) {
-        ReverseApplyGs(*it, temp);
+        ReverseApplyGs(*it, temp, m_);
     }
     return temp;
 }
@@ -76,8 +76,8 @@ Gradient GivensLayer::passBackwardAndCalcGradient(Vector& u, Vector& z) const {
         asigma.emplace_back(1 / sigma_[i]);
     }
     z *= asigma;
-    z.resize(n_);
     Vector d_sigma = u * z;
+    z.resize(n_);
     d_sigma.resize(min_n_m_);
     u *= sigma_;
     u.resize(n_);
@@ -95,7 +95,7 @@ void GivensLayer::updateAlpha(const Matrix& alpha, double step) {
     for (size_t i = 0; i < alpha_.size(); ++i) {
         assert(alpha[i].size() == alpha_[i].size() &&
                "different shapes of parameter and graient");
-        updateVector(alpha_[i], alpha[i], step);
+        updateVector(alpha_[i], alpha[i], -step);
     }
 }
 
@@ -105,8 +105,7 @@ void GivensLayer::updateBeta(const Matrix& beta, double step) {
     for (size_t i = 0; i < beta_.size(); ++i) {
         assert(beta[i].size() == beta_[beta_.size() - i - 1].size() &&
                "different shapes of parameter and graient");
-        updateReversedVector(beta_[beta_.size() - i - 1], beta[i], step);
-    }
+        updateReversedVector(beta_[beta_.size() - i - 1], beta[i], step);    }
 }
 
 void GivensLayer::updateSigma(const Vector& sigma, double step) {
@@ -122,15 +121,16 @@ Matrix GivensLayer::passForward(const Matrix& x) const {
     return output;
 }
 
-void GivensLayer::ApplyGs(const Vector& angles, Vector& v) const {
+void GivensLayer::ApplyGs(const Vector& angles, Vector& v, size_t v_size) const {
     for (size_t i = 0; i < angles.size(); ++i) {
-        G(angles[i], v.size() - 1 - i, v);
+        G(angles[i], v_size - 1 - i, v);
     }
 }
 
-void GivensLayer::ReverseApplyGs(const Vector& angles, Vector& v) const {
+void GivensLayer::ReverseApplyGs(const Vector& angles, Vector& v, size_t v_size) const {
     for (size_t i = angles.size(); i > 0; --i) {
-        G(angles[i - 1], i + v.size() - angles.size() - 1, v);
+        // G(angles[i - 1], i + v_size - angles.size() - 1, v);
+        G(angles[i - 1], v_size - i, v);
     }
 }
 
@@ -152,7 +152,9 @@ Vector GivensLayer::ReverseCalcVectorD(const Vector& betas, Vector& u,
     Vector d;
     d.reserve(betas.size());
     for (size_t i = betas.size(); i > 0; --i) {
-        size_t row = betas.size() - i + 1;
+        size_t row = z_size - i; // TODO тут row идёт от 0 до ..., а надо наоборот
+        // size_t row = z_size - i + 1;
+        // size_t row = i + z_size - betas.size() - 1;
         d.emplace_back(z[row - 1] * u[row] - z[row] * u[row - 1]);
         RG(betas[i - 1], row, u);
         G(-betas[i - 1], row, z);

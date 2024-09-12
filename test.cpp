@@ -80,10 +80,8 @@ std::vector<TrainUnit> parseMNISTDataset(
             "Different number of rows in images and labels!");
     }
 
-    std::cout << "NoL:" << number_of_labels << std::endl;
-
     std::vector<TrainUnit> dataset(0);
-    for (int i = 0; i < number_of_labels / 100; i++) {
+    for (int i = 0; i < number_of_labels; i++) {
         dataset.push_back(read_mnist_train_unit(file_images, file_labels,
                                                 size_of_mnist_image));
     }
@@ -162,28 +160,33 @@ void test_sum_multi_layers() {
 }
 
 void test_mnist() {
-    std::cout << "MNIST TRAIN:\n";
-
     std::vector<TrainUnit> train =
         parseMNISTDataset("../train-images-idx3-ubyte/train-images.idx3-ubyte",
                           "../train-labels-idx1-ubyte/train-labels.idx1-ubyte");
     std::vector<TrainUnit> test =
         parseMNISTDataset("../t10k-images-idx3-ubyte/t10k-images.idx3-ubyte",
                           "../t10k-labels-idx1-ubyte/t10k-labels.idx1-ubyte");
-
     GivensNet net(784, 256, ActivationFunction::Sigmoid());
     net.AddLayer(10, ActivationFunction::Sigmoid());
-    for (size_t i = 0; i < 2000; ++i) {
+    for (size_t i = 0; i < 100; ++i) {
         simple_test_loss("MNIST", net, train, LossFunction::Euclid(), test,
-                         LossFunction::Euclid(), 1, 99999999, 0.001);
+                         LossFunction::Euclid(), 1, 6, 0.7);
     }
 }
 
+void test_vector_output() {
+    std::vector<TrainUnit> train = {{{}, {0.1, 2}}};
+    GivensNet net(0, 2, ActivationFunction::LeakyReLU());
+    simple_test_loss("VECTOR OUTPUT", net, train, LossFunction::Euclid(), train,
+                         LossFunction::Euclid(), 100, 1, 0.1);
+}
+
 void run_all_tests() {
+    test_vector_output();
     test_echo();
     test_sum();
     test_sum_multi_layers();
-    // test_mnist();
+    test_mnist();
 }
 
 }  // namespace neural_network

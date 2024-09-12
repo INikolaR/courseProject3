@@ -19,8 +19,8 @@ public:
     void updateSigma(const Vector& sigma, double step);
 
 private:
-    void ApplyGs(const Vector& angles, Vector& v) const;
-    void ReverseApplyGs(const Vector& angles, Vector& v) const;
+    void ApplyGs(const Vector& angles, Vector& v, size_t v_size) const;
+    void ReverseApplyGs(const Vector& angles, Vector& v, size_t v_size) const;
     Vector CalcVectorD(const Vector& alphas, Vector& u, Vector& z,
                        size_t z_size) const;
     Vector ReverseCalcVectorD(const Vector& betas, Vector& u, Vector& z,
