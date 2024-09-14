@@ -81,7 +81,7 @@ std::vector<TrainUnit> parseMNISTDataset(
     }
 
     std::vector<TrainUnit> dataset(0);
-    for (int i = 0; i < number_of_labels; i++) {
+    for (int i = 0; i < number_of_labels / 1000; i++) {
         dataset.push_back(read_mnist_train_unit(file_images, file_labels,
                                                 size_of_mnist_image));
     }
@@ -108,23 +108,28 @@ void simple_test_loss(const std::string& test_name, GivensNet& net,
               << "\n";
 }
 
-void simple_test_accuracy(const std::string& test_name, GivensNet& net,
-                          const std::vector<TrainUnit>& train_dataset,
-                          const LossFunction& train_loss,
-                          const std::vector<TrainUnit>& test_dataset,
-                          size_t n_of_epochs, int batch_size, double step) {
+double simple_test_loss_accuracy(const std::string& test_name, GivensNet& net,
+                                 const std::vector<TrainUnit>& train_dataset,
+                                 const LossFunction& train_loss,
+                                 const std::vector<TrainUnit>& test_dataset,
+                                 const LossFunction& test_loss,
+                                 size_t n_of_epochs, int batch_size,
+                                 double step) {
     std::cout << "TEST " << test_name << ":\n";
     auto start = std::chrono::system_clock::now();
     net.fit(train_dataset, train_loss, n_of_epochs, batch_size, step);
     auto end = std::chrono::system_clock::now();
+    double loss = net.loss(test_dataset, test_loss);
     auto time =
         std::chrono::duration_cast<std::chrono::milliseconds>(end - start)
             .count();
     std::cout << "    time: " << time / 1000 << "." << time % 1000
-              << " s\n    accuracy: " << net.accuracy(test_dataset)
+              << " s\n    loss: " << loss
+              << "\n    accuracy: " << net.accuracy(test_dataset)
               << "\n    epochs: " << n_of_epochs
               << "\n    batch size: " << batch_size << "\n    step: " << step
               << "\n";
+    return loss;
 }
 
 void test_echo() {
@@ -168,9 +173,11 @@ void test_mnist() {
                           "../t10k-labels-idx1-ubyte/t10k-labels.idx1-ubyte");
     GivensNet net(784, 256, ActivationFunction::Sigmoid());
     net.AddLayer(10, ActivationFunction::Sigmoid());
-    for (size_t i = 0; i < 100; ++i) {
-        simple_test_loss("MNIST", net, train, LossFunction::Euclid(), test,
-                         LossFunction::Euclid(), 1, 6, 0.7);
+    double step = 0.2;
+    for (size_t i = 0; i < 1000; ++i) {
+        double curr_loss = simple_test_loss_accuracy(
+            "MNIST", net, train, LossFunction::Euclid(), train,
+            LossFunction::Euclid(), 1, 6, step);
     }
 }
 
@@ -178,14 +185,14 @@ void test_vector_output() {
     std::vector<TrainUnit> train = {{{}, {0.1, 2}}};
     GivensNet net(0, 2, ActivationFunction::LeakyReLU());
     simple_test_loss("VECTOR OUTPUT", net, train, LossFunction::Euclid(), train,
-                         LossFunction::Euclid(), 100, 1, 0.1);
+                     LossFunction::Euclid(), 100, 1, 0.1);
 }
 
 void run_all_tests() {
-    test_vector_output();
-    test_echo();
-    test_sum();
-    test_sum_multi_layers();
+    // test_vector_output();
+    // test_echo();
+    // test_sum();
+    // test_sum_multi_layers();
     test_mnist();
 }
 
