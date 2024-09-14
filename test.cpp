@@ -81,7 +81,7 @@ std::vector<TrainUnit> parseMNISTDataset(
     }
 
     std::vector<TrainUnit> dataset(0);
-    for (int i = 0; i < number_of_labels / 1000; i++) {
+    for (int i = 0; i < number_of_labels; i++) {
         dataset.push_back(read_mnist_train_unit(file_images, file_labels,
                                                 size_of_mnist_image));
     }
@@ -176,7 +176,7 @@ void test_mnist() {
     double step = 0.2;
     for (size_t i = 0; i < 1000; ++i) {
         double curr_loss = simple_test_loss_accuracy(
-            "MNIST", net, train, LossFunction::Euclid(), train,
+            "MNIST", net, train, LossFunction::Euclid(), test,
             LossFunction::Euclid(), 1, 6, step);
     }
 }
@@ -189,10 +189,10 @@ void test_vector_output() {
 }
 
 void run_all_tests() {
-    // test_vector_output();
-    // test_echo();
-    // test_sum();
-    // test_sum_multi_layers();
+    test_vector_output();
+    test_echo();
+    test_sum();
+    test_sum_multi_layers();
     test_mnist();
 }
 
