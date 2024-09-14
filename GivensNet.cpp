@@ -72,7 +72,8 @@ void GivensNet::trainOneEpoch(const std::vector<TrainUnit>& dataset,
     for (auto it = dataset.begin(); it < dataset.end(); it += batch_size) {
         auto end_of_batch =
             (it + batch_size < dataset.end() ? it + batch_size : dataset.end());
-        trainOneBatch(it, end_of_batch, loss, step / static_cast<double>(end_of_batch - it));
+        trainOneBatch(it, end_of_batch, loss,
+                      step / static_cast<double>(end_of_batch - it));
     }
 }
 
@@ -106,8 +107,6 @@ std::vector<Gradient> GivensNet::trainOneUnit(const Vector& x, const Vector& y,
     Vector temp;
     temp.reserve(x.size() + 1);
     std::copy(x.begin(), x.end(), back_inserter(temp));
-    std::vector<Vector> linear_in;
-    linear_in.reserve(linear_layers_.size());
     std::vector<Vector> non_linear_in;
     non_linear_in.reserve(non_linear_layers_.size());
     auto linear_it = linear_layers_.begin();
@@ -116,7 +115,6 @@ std::vector<Gradient> GivensNet::trainOneUnit(const Vector& x, const Vector& y,
            non_linear_it != non_linear_layers_.end();
          ++linear_it, ++non_linear_it) {
         temp.emplace_back(1);
-        linear_in.emplace_back(temp);
         temp = linear_it->passForwardWithoutShrinking(temp);
         non_linear_in.emplace_back(temp);
         temp.resize(linear_it->sizeOut());
@@ -129,19 +127,15 @@ std::vector<Gradient> GivensNet::trainOneUnit(const Vector& x, const Vector& y,
 
     auto linear_layer_it = linear_layers_.rbegin();
     auto non_linear_layer_it = non_linear_layers_.rbegin();
-    auto linear_in_it = linear_in.rbegin();
     auto non_linear_in_it = non_linear_in.rbegin();
     for (; linear_layer_it != linear_layers_.rend() &&
            non_linear_layer_it != non_linear_layers_.rend() &&
-           linear_in_it != linear_in.rend() &&
            non_linear_in_it != non_linear_in.rend();
-         ++linear_layer_it, ++non_linear_layer_it, ++linear_in_it,
-         ++non_linear_in_it) {
+         ++linear_layer_it, ++non_linear_layer_it, ++non_linear_in_it) {
         u.resize(linear_layer_it->sizeOut());
         u *= non_linear_layer_it->evaluate1(*non_linear_in_it);
         Gradient g =
             linear_layer_it->passBackwardAndCalcGradient(u, *non_linear_in_it);
-            // linear_layer_it->passBackwardAndCalcGradient(u, *linear_in_it);
         to_update.emplace_back(g);
     }
     return to_update;
