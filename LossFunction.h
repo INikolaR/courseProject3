@@ -8,6 +8,7 @@ namespace neural_network {
 class LossFunction {
 public:
     static LossFunction Euclid();
+    static LossFunction Manhattan();
     LossFunction(std::function<double(const Vector&, const Vector&)>&& f0,
                  std::function<Vector(const Vector&, const Vector&)>&& f1);
     double evaluate0(const Vector& x, const Vector& y) const;
