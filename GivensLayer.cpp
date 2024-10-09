@@ -95,7 +95,7 @@ void GivensLayer::updateAlpha(const Matrix& alpha, double step) {
     for (size_t i = 0; i < alpha_.size(); ++i) {
         assert(alpha[i].size() == alpha_[i].size() &&
                "different shapes of parameter and graient");
-        updateVector(alpha_[i], alpha[i], -step);
+        updateVector(alpha_[i], alpha[i], step);
     }
 }
 
@@ -132,7 +132,7 @@ void GivensLayer::ApplyGs(const Vector& angles, Vector& v,
 void GivensLayer::ReverseApplyGs(const Vector& angles, Vector& v,
                                  size_t v_size) const {
     for (size_t i = angles.size(); i > 0; --i) {
-        G(angles[i - 1], v_size - i, v);
+        G(-angles[i - 1], v_size - i, v);
     }
 }
 
@@ -143,8 +143,8 @@ Vector GivensLayer::CalcVectorD(const Vector& alphas, Vector& u, Vector& z,
     for (size_t i = 0; i < alphas.size(); ++i) {
         size_t row = z_size - 1 - i;
         d.emplace_back(z[row] * u[row - 1] - z[row - 1] * u[row]);
-        RG(alphas[i], row, u);
-        G(-alphas[i], row, z);
+        RG(-alphas[i], row, u);
+        G(alphas[i], row, z);
     }
     return d;
 }

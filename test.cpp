@@ -5,6 +5,7 @@
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <iomanip>
 
 namespace neural_network {
 
@@ -93,10 +94,10 @@ void simple_test_loss(const std::string& test_name, GivensNet& net,
                       const LossFunction& train_loss,
                       const std::vector<TrainUnit>& test_dataset,
                       const LossFunction& test_loss, size_t n_of_epochs,
-                      int batch_size, double step) {
+                      int batch_size, double sigma_step, double angle_step) {
     std::cout << "TEST " << test_name << ":\n";
     auto start = std::chrono::system_clock::now();
-    net.fit(train_dataset, train_loss, n_of_epochs, batch_size, step);
+    net.fit(train_dataset, train_loss, n_of_epochs, batch_size, sigma_step, angle_step);
     auto end = std::chrono::system_clock::now();
     auto time =
         std::chrono::duration_cast<std::chrono::milliseconds>(end - start)
@@ -104,8 +105,8 @@ void simple_test_loss(const std::string& test_name, GivensNet& net,
     std::cout << "    time: " << time / 1000 << "." << time % 1000
               << " s\n    loss: " << net.loss(test_dataset, test_loss)
               << "\n    epochs: " << n_of_epochs
-              << "\n    batch size: " << batch_size << "\n    step: " << step
-              << "\n";
+              << "\n    batch size: " << batch_size << "\n    sigma_step: " << sigma_step
+              << "\n    angle_step: " << angle_step << "\n";
 }
 
 double simple_test_loss_accuracy(const std::string& test_name, GivensNet& net,
@@ -114,10 +115,10 @@ double simple_test_loss_accuracy(const std::string& test_name, GivensNet& net,
                                  const std::vector<TrainUnit>& test_dataset,
                                  const LossFunction& test_loss,
                                  size_t n_of_epochs, int batch_size,
-                                 double step) {
+                                 double sigma_step, double angle_step) {
     std::cout << "TEST " << test_name << ":\n";
     auto start = std::chrono::system_clock::now();
-    net.fit(train_dataset, train_loss, n_of_epochs, batch_size, step);
+    net.fit(train_dataset, train_loss, n_of_epochs, batch_size, sigma_step, angle_step);
     auto end = std::chrono::system_clock::now();
     double loss = net.loss(test_dataset, test_loss);
     auto time =
@@ -127,8 +128,8 @@ double simple_test_loss_accuracy(const std::string& test_name, GivensNet& net,
               << " s\n    loss: " << loss
               << "\n    accuracy: " << net.accuracy(test_dataset)
               << "\n    epochs: " << n_of_epochs
-              << "\n    batch size: " << batch_size << "\n    step: " << step
-              << "\n";
+              << "\n    batch size: " << batch_size << "\n    step: " << sigma_step
+              << "\n    angle_step: " << angle_step << "\n";
     return loss;
 }
 
@@ -137,8 +138,17 @@ void test_echo() {
                                    {{4}, {4}}, {{5}, {5}}, {{6}, {6}},
                                    {{7}, {7}}, {{8}, {8}}};
     GivensNet net(1, 1, ActivationFunction::LeakyReLU());
-    simple_test_loss("ECHO", net, dataset, LossFunction::Euclid(), dataset,
-                     LossFunction::Euclid(), 100, 1, 0.02);
+        simple_test_loss("ECHO", net, dataset, LossFunction::Euclid(), dataset,
+                 LossFunction::Euclid(), 10000, 8, 0.02, 0.001);
+}
+
+void test_echo_manhattan() {
+    std::vector<TrainUnit> dataset{{{1}, {1}}, {{2}, {2}}, {{3}, {3}},
+                                   {{4}, {4}}, {{5}, {5}}, {{6}, {6}},
+                                   {{7}, {7}}, {{8}, {8}}};
+    GivensNet net(1, 1, ActivationFunction::LeakyReLU());
+    simple_test_loss("ECHO MANHATTAN", net, dataset, LossFunction::Manhattan(),
+                     dataset, LossFunction::Manhattan(), 1000, 1, 0.02, 0.0001);
 }
 
 void test_sum() {
@@ -149,7 +159,7 @@ void test_sum() {
         {{4, 1}, {5}}, {{4, 2}, {6}}, {{4, 3}, {7}}, {{4, 4}, {8}}};
     GivensNet net(2, 1, ActivationFunction::LeakyReLU());
     simple_test_loss("SUM", net, dataset, LossFunction::Euclid(), dataset,
-                     LossFunction::Euclid(), 1000, 16, 0.05);
+                     LossFunction::Euclid(), 1000, 16, 0.07, 0.01);
 }
 
 void test_sum_multi_layers() {
@@ -161,7 +171,7 @@ void test_sum_multi_layers() {
     GivensNet net(2, 3, ActivationFunction::LeakyReLU());
     net.AddLayer(1, ActivationFunction::LeakyReLU());
     simple_test_loss("SUM MULTI LAYERS", net, dataset, LossFunction::Euclid(),
-                     dataset, LossFunction::Euclid(), 1000, 1, 0.015);
+                     dataset, LossFunction::Euclid(), 1000, 1, 0.015, 0.0001);
 }
 
 void test_mnist() {
@@ -173,26 +183,88 @@ void test_mnist() {
                           "../t10k-labels-idx1-ubyte/t10k-labels.idx1-ubyte");
     GivensNet net(784, 256, ActivationFunction::Sigmoid());
     net.AddLayer(10, ActivationFunction::Sigmoid());
-    double step = 0.2;
+    double sigma_step = 0.01;
+    double angle_step = 0.001;
     for (size_t i = 0; i < 1000; ++i) {
         double curr_loss = simple_test_loss_accuracy(
-            "MNIST", net, train, LossFunction::Euclid(), test,
-            LossFunction::Euclid(), 1, 6, step);
+            "MNIST", net, train, LossFunction::Euclid(), train,
+            LossFunction::Euclid(), 1, 6, sigma_step, angle_step);
     }
 }
 
 void test_vector_output() {
-    std::vector<TrainUnit> train = {{{}, {0.1, 2}}};
+    std::vector<TrainUnit> train = {{{}, {5, -0.5}}};
     GivensNet net(0, 2, ActivationFunction::LeakyReLU());
     simple_test_loss("VECTOR OUTPUT", net, train, LossFunction::Euclid(), train,
-                     LossFunction::Euclid(), 100, 1, 0.1);
+                     LossFunction::Euclid(), 1000, 1, 0.5, 0.01);
+}
+
+void test_vector_output2() {
+    std::vector<TrainUnit> train = {{{}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 1}}};
+    GivensNet net(0, 256, ActivationFunction::Sigmoid());
+    net.AddLayer(10, ActivationFunction::Sigmoid());
+    for (int i = 0; i < 10; ++i) {
+        simple_test_loss("VECTOR OUTPUT", net, train, LossFunction::Euclid(), train,
+                     LossFunction::Euclid(), 10, 1, 1.7, 0.7);
+    }
+}
+
+void test_square() {
+    std::vector<TrainUnit> train = {
+        {{1}, {1}},  {{2}, {4}},  {{3}, {9}},  {{4}, {16}}, {{5}, {25}}};
+    GivensNet net(1, 1000, ActivationFunction::LeakyReLU());
+    net.AddLayer(1, ActivationFunction::Id());
+    simple_test_loss("SQUARE", net, train, LossFunction::Euclid(), train,
+                    LossFunction::Euclid(), 1000, 10, 0.0007, 0.001);
+}
+
+void nonlinear_test() {
+    std::vector<TrainUnit> train = {
+        {{1}, {3}},  {{2}, {4}},  {{3}, {9}}};
+    GivensNet net(1, 5, ActivationFunction::LeakyReLU());
+    net.AddLayer(1, ActivationFunction::Id());
+    for (int i = 0; i < 5; ++i) {
+        simple_test_loss("NON LINEAR", net, train, LossFunction::Euclid(), train,
+            LossFunction::Euclid(), 100, 3, 0.11, 0.011);
+    }
+}
+
+void test_one_layer_4x4() {
+    std::vector<TrainUnit> train = {
+        {{1, 2, 3}, {1, 4, 9, 2}},  {{0, 0, 2}, {1, 2, 3, 4}},  {{1, 2, 0}, {0, 3, 0, 2}}};
+    GivensNet net(3, 4, ActivationFunction::Id());
+    simple_test_loss("YET ANOTHER", net, train, LossFunction::Euclid(), train,
+            LossFunction::Euclid(), 100, 3, 0.1, 0.01);
+}
+
+void test_one_layer_3x4() {
+    std::vector<TrainUnit> train = {
+        {{1, 2}, {1, 4, 9, 2}},  {{0, 2}, {1, 2, 3, 4}},  {{1, 2}, {0, 3, 0, 2}}};
+    GivensNet net(2, 4, ActivationFunction::Id());
+    simple_test_loss("YET ANOTHER", net, train, LossFunction::Euclid(), train,
+            LossFunction::Euclid(), 100, 3, 0.1, 0.01);
+}
+
+void test_one_layer_4x3() {
+    std::vector<TrainUnit> train = {
+        {{1, 2, 3}, {1, 4, 9}},  {{0, 2, 2}, {1, 2, 3}},  {{1, 2, 0}, {0, 3, 2}}};
+    GivensNet net(3, 3, ActivationFunction::LeakyReLU());
+    simple_test_loss("YET ANOTHER", net, train, LossFunction::Euclid(), train,
+            LossFunction::Euclid(), 100, 3, 0.1, 0.01);
 }
 
 void run_all_tests() {
     test_vector_output();
     test_echo();
+    test_echo_manhattan();
     test_sum();
     test_sum_multi_layers();
+    test_square();
+    test_vector_output2();
+    nonlinear_test();
+    test_one_layer_4x4();
+    test_one_layer_3x4();
+    test_one_layer_4x3();
     test_mnist();
 }
 

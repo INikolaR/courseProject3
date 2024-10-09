@@ -9,6 +9,7 @@ public:
     static ActivationFunction ReLU();
     static ActivationFunction LeakyReLU();
     static ActivationFunction Sigmoid();
+    static ActivationFunction Id();
     ActivationFunction(std::function<double(double)>&& f0,
                        std::function<double(double)>&& f1);
     double evaluate0(double x) const;

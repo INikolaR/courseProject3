@@ -30,6 +30,11 @@ ActivationFunction ActivationFunction::Sigmoid() {
                               });
 }
 
+ActivationFunction ActivationFunction::Id() {
+    return ActivationFunction([](double x) { return x; },
+                              [](double x) { return 1; });
+}
+
 ActivationFunction::ActivationFunction(std::function<double(double)>&& f0,
                                        std::function<double(double)>&& f1)
     : f0_(std::move(f0)), f1_(std::move(f1)) {
