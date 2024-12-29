@@ -2,6 +2,8 @@
 #include <functional>
 #include <vector>
 
+#include "VectorOperations.h"
+
 namespace neural_network {
 
 class ActivationFunction {
@@ -14,8 +16,8 @@ public:
                        std::function<double(double)>&& f1);
     double evaluate0(double x) const;
     double evaluate1(double x) const;
-    std::vector<double> evaluate0(const std::vector<double>& x) const;
-    std::vector<double> evaluate1(const std::vector<double>& x) const;
+    Vector evaluate0(const Vector& x) const;
+    Vector evaluate1(const Vector& x) const;
 
 private:
     static constexpr double LeakyReLUCoefficient = 0.1;

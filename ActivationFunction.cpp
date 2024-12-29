@@ -50,10 +50,9 @@ double ActivationFunction::evaluate1(double value) const {
     return f1_(value);
 }
 
-std::vector<double> ActivationFunction::evaluate0(
-    const std::vector<double>& x) const {
+Vector ActivationFunction::evaluate0(const Vector& x) const {
     assert(f0_);
-    std::vector<double> x_result;
+    Vector x_result;
     x_result.reserve(x.size() + 1);
     for (double element : x) {
         x_result.emplace_back(f0_(element));
@@ -61,10 +60,9 @@ std::vector<double> ActivationFunction::evaluate0(
     return x_result;
 }
 
-std::vector<double> ActivationFunction::evaluate1(
-    const std::vector<double>& x) const {
+Vector ActivationFunction::evaluate1(const Vector& x) const {
     assert(f1_);
-    std::vector<double> x_result;
+    Vector x_result;
     x_result.reserve(x.size() + 1);
     for (double element : x) {
         x_result.emplace_back(f1_(element));

@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cmath>
+#include <iostream>
 
 #include "VectorOperations.h"
 
@@ -13,10 +14,10 @@ GivensLayer::GivensLayer(size_t in, size_t out)
       n_(in + 1),
       m_(out),
       min_n_m_(std::min(n_, m_)),
-      alpha_(std::move(
-          rnd_.givensAngleMatrix(std::min(min_n_m_, m_ - 1), m_ - 1))),
-      beta_(std::move(
-          rnd_.givensAngleMatrix(std::min(min_n_m_, n_ - 1), n_ - 1))),
+      alpha_(std::move(rnd_.givensAngles(min_n_m_ * (min_n_m_ - 1) / 2 +
+                                         min_n_m_ * (m_ - min_n_m_)))),
+      beta_(std::move(rnd_.givensAngles(min_n_m_ * (min_n_m_ - 1) / 2 +
+                                        min_n_m_ * (n_ - min_n_m_)))),
       sigma_(std::move(rnd_.singularValues(min_n_m_))) {
 }
 
@@ -28,47 +29,70 @@ size_t GivensLayer::sizeOut() const {
     return m_;
 }
 
-Vector GivensLayer::passForward(const Vector& x) const {
-    assert(x.size() == n_ &&
-           "size of x should be 1 more than input size of layer");
+Vector GivensLayer::forward(const Vector& x) const {
+    assert(x.size() == n_ - 1 &&
+           "size of x should be the same as input size of layer");
     assert(!x.empty() && "x should be not empty");
-    assert(x[x.size() - 1] == 1 && "last elem of x should be equal 1");
-    Vector temp(x);
-    for (auto it = beta_.begin(); it != beta_.end(); ++it) {
-        ApplyGs(*it, temp, n_);
+    Vector temp;
+    temp.reserve(x.size() + 1);
+    std::copy(x.begin(), x.end(), back_inserter(temp));
+    temp.emplace_back(1.0);
+    auto it_beta = beta_.begin();
+    for (size_t col = 0; col < min_n_m_; ++col) {
+        for (size_t row = temp.size() - 1; row > col; --row, ++it_beta) {
+            G(*it_beta, row, temp);
+        }
     }
     temp.resize(m_);
     temp *= sigma_;
-    for (auto it = alpha_.rbegin(); it != alpha_.rend(); ++it) {
-        ReverseApplyGs(*it, temp, m_);
+    auto it_alpha = alpha_.rbegin();
+    for (size_t col = min_n_m_; col > 0; --col) {
+        for (size_t row = col; row < temp.size(); ++row, ++it_alpha) {
+            G(-*it_alpha, row, temp);
+        }
     }
     return temp;
 }
 
-Vector GivensLayer::passForwardWithoutShrinking(const Vector& x) const {
-    assert(x.size() == n_ &&
-           "size of x should be 1 more than input size of layer");
-    assert(x[x.size() - 1] == 1 && "last elem of x should be equal 1");
-    Vector temp(x);
-    for (auto it = beta_.begin(); it != beta_.end(); ++it) {
-        ApplyGs(*it, temp, n_);
+Vector GivensLayer::forwardWithoutShrinking(const Vector& x) const {
+    assert(x.size() == n_ - 1 &&
+           "size of x should be the same as input size of layer");
+    assert(!x.empty() && "x should be not empty");
+    Vector temp;
+    temp.reserve(x.size() + 1);
+    std::copy(x.begin(), x.end(), back_inserter(temp));
+    temp.emplace_back(1.0);
+    auto it_beta = beta_.begin();
+    for (size_t col = 0; col < min_n_m_; ++col) {
+        for (size_t row = n_ - 1; row > col; --row, ++it_beta) {
+            G(*it_beta, row, temp);
+        }
     }
     temp.resize(n_ + m_ - min_n_m_);
     temp *= sigma_;
-    for (auto it = alpha_.rbegin(); it != alpha_.rend(); ++it) {
-        ReverseApplyGs(*it, temp, m_);
+    auto it_alpha = alpha_.rbegin();
+    for (size_t col = min_n_m_; col > 0; --col) {
+        for (size_t row = col; row < m_; ++row, ++it_alpha) {
+            G(-*it_alpha, row, temp);
+        }
     }
     return temp;
 }
 
-Gradient GivensLayer::passBackwardAndCalcGradient(Vector& u, Vector& z) const {
+SVD GivensLayer::backwardCalcGradient(Vector& u, Vector& z) const {
     assert(u.size() == m_ && "u size should be equal to output size of layer");
-    assert(z.size() == m_ + n_ - min_n_m_ &&
-           "z size should be equal to max(input size; output size) of layer");
-    Matrix d_alpha;
-    d_alpha.reserve(alpha_.size() * (m_ - 1));
-    for (auto it = alpha_.begin(); it != alpha_.end(); ++it) {
-        d_alpha.emplace_back(CalcVectorD(*it, u, z, m_));
+    assert(
+        z.size() == m_ + n_ - min_n_m_ &&
+        "z size should be equal to max(input size + 1; output size) of layer");
+    Vector d_alpha;
+    d_alpha.reserve(alpha_.size());
+    auto alpha_it = alpha_.begin();
+    for (size_t col = 0; col < min_n_m_; ++col) {
+        for (size_t row = m_ - 1; row > col; --row, ++alpha_it) {
+            d_alpha.emplace_back(z[row] * u[row - 1] - z[row - 1] * u[row]);
+            RG(-*alpha_it, row, u);
+            G(*alpha_it, row, z);
+        }
     }
     Vector asigma;
     asigma.reserve(sigma_.size());
@@ -81,85 +105,29 @@ Gradient GivensLayer::passBackwardAndCalcGradient(Vector& u, Vector& z) const {
     d_sigma.resize(min_n_m_);
     u *= sigma_;
     u.resize(n_);
-    Matrix d_beta;
-    d_beta.reserve(beta_.size() * (n_ - 1));
-    for (auto it = beta_.rbegin(); it != beta_.rend(); ++it) {
-        d_beta.emplace_back(ReverseCalcVectorD(*it, u, z, n_));
+    Vector d_beta;
+    d_beta.reserve(beta_.size());
+    auto beta_it = beta_.rbegin();
+    for (size_t col = min_n_m_; col > 0; --col) {
+        for (size_t row = col; row < n_; ++row, ++beta_it) {
+            d_beta.emplace_back(z[row - 1] * u[row] - z[row] * u[row - 1]);
+            RG(*beta_it, row, u);
+            G(-*beta_it, row, z);
+        }
     }
-    return Gradient{d_alpha, d_sigma, d_beta};
+    return SVD{d_alpha, d_sigma, d_beta};
 }
 
-void GivensLayer::updateAlpha(const Matrix& alpha, double step) {
-    assert(alpha.size() == alpha_.size() &&
+void GivensLayer::update(const SVD& grad, double step) {
+    assert(grad.U.size() == alpha_.size() &&
            "different shapes of parameter and graient");
-    for (size_t i = 0; i < alpha_.size(); ++i) {
-        assert(alpha[i].size() == alpha_[i].size() &&
-               "different shapes of parameter and graient");
-        updateVector(alpha_[i], alpha[i], step);
-    }
-}
-
-void GivensLayer::updateBeta(const Matrix& beta, double step) {
-    assert(beta.size() == beta_.size() &&
+    assert(grad.V.size() == beta_.size() &&
            "different shapes of parameter and graient");
-    for (size_t i = 0; i < beta_.size(); ++i) {
-        assert(beta[i].size() == beta_[beta_.size() - i - 1].size() &&
-               "different shapes of parameter and graient");
-        updateReversedVector(beta_[beta_.size() - i - 1], beta[i], step);
-    }
-}
-
-void GivensLayer::updateSigma(const Vector& sigma, double step) {
-    updateVector(sigma_, sigma, step);
-}
-
-Matrix GivensLayer::passForward(const Matrix& x) const {
-    Matrix output;
-    output.reserve(x.size());
-    for (const Vector& v : x) {
-        output.emplace_back(passForward(v));
-    }
-    return output;
-}
-
-void GivensLayer::ApplyGs(const Vector& angles, Vector& v,
-                          size_t v_size) const {
-    for (size_t i = 0; i < angles.size(); ++i) {
-        G(angles[i], v_size - 1 - i, v);
-    }
-}
-
-void GivensLayer::ReverseApplyGs(const Vector& angles, Vector& v,
-                                 size_t v_size) const {
-    for (size_t i = angles.size(); i > 0; --i) {
-        G(-angles[i - 1], v_size - i, v);
-    }
-}
-
-Vector GivensLayer::CalcVectorD(const Vector& alphas, Vector& u, Vector& z,
-                                size_t z_size) const {
-    Vector d;
-    d.reserve(alphas.size());
-    for (size_t i = 0; i < alphas.size(); ++i) {
-        size_t row = z_size - 1 - i;
-        d.emplace_back(z[row] * u[row - 1] - z[row - 1] * u[row]);
-        RG(-alphas[i], row, u);
-        G(alphas[i], row, z);
-    }
-    return d;
-}
-
-Vector GivensLayer::ReverseCalcVectorD(const Vector& betas, Vector& u,
-                                       Vector& z, size_t z_size) const {
-    Vector d;
-    d.reserve(betas.size());
-    for (size_t i = betas.size(); i > 0; --i) {
-        size_t row = z_size - i;
-        d.emplace_back(z[row - 1] * u[row] - z[row] * u[row - 1]);
-        RG(betas[i - 1], row, u);
-        G(-betas[i - 1], row, z);
-    }
-    return d;
+    assert(grad.sigma.size() == sigma_.size() &&
+           "different shapes of parameter and graient");
+    updateVector(alpha_, grad.U, step);
+    updateVector(beta_, grad.V, step);
+    updateVector(sigma_, grad.sigma, step);
 }
 
 }  // namespace neural_network

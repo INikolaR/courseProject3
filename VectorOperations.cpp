@@ -38,12 +38,6 @@ void operator*=(Vector& a, double b) {
     }
 }
 
-void operator+=(Matrix& a, const Matrix& b) {
-    for (size_t i = 0; i < std::min(a.size(), b.size()); ++i) {
-        a[i] += b[i];
-    }
-}
-
 Vector operator*(const Vector& a, const Vector& b) {
     Vector mult;
     mult.reserve(std::min(a.size(), b.size()));
@@ -89,6 +83,7 @@ double dot(const Vector& a, const Vector& b) {
 }
 
 void G(double angle, size_t row, Vector& v) {
+    assert(row > 0);
     assert(row <= v.size() - 1);
     double t1 = v[row - 1] * std::cos(angle) - v[row] * std::sin(angle);
     double t2 = v[row - 1] * std::sin(angle) + v[row] * std::cos(angle);
@@ -97,6 +92,7 @@ void G(double angle, size_t row, Vector& v) {
 }
 
 void RG(double angle, size_t row, Vector& v) {
+    assert(row > 0);
     assert(row <= v.size() - 1);
     double t1 = v[row - 1] * std::cos(angle) + v[row] * std::sin(angle);
     double t2 = -v[row - 1] * std::sin(angle) + v[row] * std::cos(angle);
@@ -104,7 +100,7 @@ void RG(double angle, size_t row, Vector& v) {
     v[row] = t2;
 }
 
-size_t getMaxInd(const Vector& a) {
+size_t argmax(const Vector& a) {
     if (a.empty()) {
         return 0;
     }
