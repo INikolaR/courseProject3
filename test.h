@@ -21,5 +21,6 @@ void test_sum_multi_layers();
 void test_mnist();
 void test_vector_output();
 void run_all_tests();
+void test_givens_layer();
 
 }  // namespace neural_network

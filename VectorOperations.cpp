@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <cmath>
+#include <iostream>
 
 namespace neural_network {
 
@@ -113,6 +114,39 @@ size_t argmax(const Vector& a) {
         }
     }
     return max_index;
+}
+
+Vector getGivensDecompose(EMatrix& m) {
+    Vector svd_m;
+    svd_m.reserve(m.cols() * (m.cols() - 1) / 2 +
+                  m.cols() * (m.rows() - m.cols()));
+    for (size_t col = 0; col < m.cols(); ++col) {
+        for (size_t row = m.rows() - 1; row > col; --row) {
+            double temp_sqrt = sqrt(m(row, col) * m(row, col) +
+                                    m(row - 1, col) * m(row - 1, col));
+            double angle = atan2(-m(row, col), m(row - 1, col));
+            EMatrix g{{cos(angle), -sin(angle)}, {sin(angle), cos(angle)}};
+            m.block(row - 1, 0, 2, m.cols()).applyOnTheLeft(g);
+            svd_m.emplace_back(angle);
+        }
+    }
+    return svd_m;
+}
+
+SVD getGivensPerfomance(const Vector& vector, size_t rows, size_t cols) {
+    assert(vector.size() == rows * cols);
+    EMatrix m(rows, cols);
+    for (int i = 0, counter = 0; i < rows; ++i) {
+        for (int j = 0; j < cols; ++j, ++counter) {
+            m(i, j) = vector[counter];
+        }
+    }
+    Eigen::JacobiSVD<EMatrix> svd(m, Eigen::ComputeThinU | Eigen::ComputeThinV);
+    EMatrix u = svd.matrixU();
+    EMatrix v = svd.matrixV();
+    EMatrix s = svd.singularValues();
+    return SVD{getGivensDecompose(u), Vector(s.data(), s.data() + s.size()),
+               getGivensDecompose(v)};
 }
 
 }  // namespace neural_network

@@ -253,6 +253,15 @@ void test_one_layer_4x3() {
                      LossFunction::Euclid(), 100, 3, 0.1);
 }
 
+void test_givens_layer() {
+    Vector w = {1, 2, 3.55555, 4, 5, 6, 7, 8, 9, 10, 11, 12};
+    GivensLayer l(w, 3, 3);
+    Vector out = l.forward({1, 1, 1});
+    for (double e : out) {
+        std::cout << " " << e << "\n";
+    }
+}
+
 void run_all_tests() {
     // test_vector_output();
     // test_echo();
@@ -265,7 +274,11 @@ void run_all_tests() {
     // test_one_layer_4x4();
     // test_one_layer_3x4();
     // test_one_layer_4x3();
-    test_mnist();
+    // test_mnist();
+    // getGivensPerfomance({1, 2, 3.55555555555555, 4, 5, 6, 7, 8, 9, 10, 11,
+    // 12, 13, 14, 15}, 3,
+    //                     5);
+    test_givens_layer();
 }
 
 }  // namespace neural_network

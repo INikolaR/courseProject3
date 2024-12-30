@@ -21,6 +21,10 @@ GivensLayer::GivensLayer(size_t in, size_t out)
       sigma_(std::move(rnd_.singularValues(min_n_m_))) {
 }
 
+GivensLayer::GivensLayer(const Vector& weights, size_t in, size_t out)
+    : GivensLayer(getGivensPerfomance(weights, out, in + 1), in, out) {
+}
+
 size_t GivensLayer::sizeIn() const {
     return n_ - 1;
 }
@@ -128,6 +132,16 @@ void GivensLayer::update(const SVD& grad, double step) {
     updateVector(alpha_, grad.U, step);
     updateVector(beta_, grad.V, step);
     updateVector(sigma_, grad.sigma, step);
+}
+
+GivensLayer::GivensLayer(const SVD& svd, size_t in, size_t out)
+    : rnd_(std::move(Random())),
+      n_(in + 1),
+      m_(out),
+      min_n_m_(std::min(n_, m_)),
+      alpha_(std::move(svd.U)),
+      beta_(std::move(svd.V)),
+      sigma_(std::move(svd.sigma)) {
 }
 
 }  // namespace neural_network

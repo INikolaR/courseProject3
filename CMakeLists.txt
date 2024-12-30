@@ -6,6 +6,8 @@ SET(CMAKE_CXX_STANDARD 17)
 
 SET(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+INCLUDE_DIRECTORIES(Eigen)
+
 SET(SOURCES LossFunction.cpp ActivationFunction.cpp GivensLayer.cpp GivensNet.cpp Random.cpp VectorOperations.cpp test.cpp exception.cpp)
 ADD_LIBRARY(lib STATIC ${SOURCES})
 

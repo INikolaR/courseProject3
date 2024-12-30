@@ -1,6 +1,7 @@
 ---
 Checks:          '-*,bugprone-too-small-loop-variable, bugprone-use-after-move, cppcoreguidelines-avoid-goto, cppcoreguidelines-avoid-non-const-global-variables, cppcoreguidelines-init-variables, cppcoreguidelines-narrowing-conversions, cppcoreguidelines-pro-type-const-cast, google-build-using-namespace, google-explicit-constructor, google-readability-casting, google-runtime-int, modernize-replace-random-shuffle, modernize-use-bool-literals, modernize-use-override, modernize-use-using, performance-for-range-copy, readability-braces-around-statements, readability-container-size-empty, readability-duplicate-include, readability-identifier-naming, readability-isolate-declaration, readability-magic-numbers, readability-make-member-function-const, readability-redundant-control-flow, readability-redundant-string-init'
 HeaderFilterRegex: '\.h$'
+ExcludeHeaderFilterRegex: 'eigen/*'
 WarningsAsErrors: '*'
 CheckOptions:
   - key: readability-identifier-naming.NamespaceCase
@@ -31,3 +32,5 @@ CheckOptions:
     value: CamelCase
   - key: google-runtime-int.TypeSuffix
     value: _t
+  - key: cppcoreguidelines-pro-type-reinterpret-cast.DontUseReinterpretCast
+    value: false

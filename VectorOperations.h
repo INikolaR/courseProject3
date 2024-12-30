@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CustomTypes.h"
+#include "eigen/Eigen/Dense"
 
 namespace neural_network {
 
@@ -18,5 +19,6 @@ double dot(const Vector& a, const Vector& b);
 void G(double angle, size_t row, Vector& v);
 void RG(double angle, size_t row, Vector& v);
 size_t argmax(const Vector& a);
+SVD getGivensPerfomance(const Vector& v, size_t rows, size_t cols);
 
 }  // namespace neural_network

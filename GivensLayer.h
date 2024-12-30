@@ -8,6 +8,7 @@ namespace neural_network {
 class GivensLayer {
 public:
     GivensLayer(size_t in, size_t out);
+    GivensLayer(const Vector& weights, size_t in, size_t out);
     size_t sizeIn() const;
     size_t sizeOut() const;
     Vector forward(const Vector& x) const;
@@ -16,6 +17,8 @@ public:
     void update(const SVD& grad, double step);
 
 private:
+    GivensLayer(const SVD& svd, size_t in, size_t out);
+
     Random rnd_;
     size_t n_;
     size_t m_;
