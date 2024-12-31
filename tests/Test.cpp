@@ -1,5 +1,6 @@
 #include "GivensLayer.h"
 #include "gtest/gtest.h"
+#include "MatrixLayer.h"
 
 namespace neural_network {
 namespace tests {
@@ -58,6 +59,14 @@ TEST(GivensLayer_backwardCalcGradient, assertion1) {
     EXPECT_TRUE(1e-5 > dot(diff_v, diff_v));
     EXPECT_TRUE(1e-5 > dot(diff_cumulative_u, diff_cumulative_u));
     EXPECT_TRUE(1e-5 > dot(diff_cumulative_z, diff_cumulative_z));
+}
+
+TEST(MatrixLayer_forward, assertion1) {
+    Vector w = {1.5, 2.5, 3.2, 4, 5.23, 6.1, 7.2, 8.3, 9, 10.01, 11.5, 12};
+    MatrixLayer l(w, 3, 3);
+    Vector out = l.forward({1, 1, 1});
+    Vector diff = out - Vector{11.2, 26.83, 42.51};
+    EXPECT_TRUE(1e-5 > dot(diff, diff));
 }
 }  // namespace tests
 }  // namespace neural_network
