@@ -254,10 +254,26 @@ void test_one_layer_4x3() {
 }
 
 void test_givens_layer() {
-    Vector w = {1, 2, 3.55555, 4, 5, 6, 7, 8, 9, 10, 11, 12};
-    GivensLayer l(w, 3, 3);
-    Vector out = l.forward({1, 1, 1});
-    for (double e : out) {
+    Vector w = {1, 2, 3, 4};
+    GivensLayer l(w, 1, 2);
+    Vector u = {3, 4};
+    Vector z = {1, 2};
+    SVD svd = l.backwardCalcGradient(u, z);
+    for (double e : svd.U) {
+        std::cout << " " << e << "\n";
+    }
+    for (double e : svd.sigma) {
+        std::cout << " " << e << "\n";
+    }
+    for (double e : svd.V) {
+        std::cout << " " << e << "\n";
+    }
+    std::cout << "u = \n";
+    for (double e : u) {
+        std::cout << " " << e << "\n";
+    }
+    std::cout << "z = \n";
+    for (double e : z) {
         std::cout << " " << e << "\n";
     }
 }
