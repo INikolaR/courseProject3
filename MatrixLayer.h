@@ -8,7 +8,8 @@ public:
     size_t sizeIn() const;
     size_t sizeOut() const;
     Vector forward(const Vector& x) const;
-    Vector backwardCalcGradient(Vector& u, const Vector& x) const;
+    Vector forwardOnTrain(const Vector& x) const;
+    Vector backwardCalcGradient(Vector& u, const Vector& x, Vector& z) const;
     void update(const Vector& grad, double step);
 
 private:

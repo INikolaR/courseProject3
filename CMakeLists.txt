@@ -11,7 +11,7 @@ ENABLE_TESTING()
 
 INCLUDE_DIRECTORIES(Eigen)
 
-SET(SOURCES LossFunction.cpp ActivationFunction.cpp GivensLayer.cpp GivensNet.cpp Random.cpp VectorOperations.cpp test.cpp exception.cpp MatrixLayer.cpp)
+SET(SOURCES LossFunction.cpp ActivationFunction.cpp GivensLayer.cpp Net.cpp Random.cpp VectorOperations.cpp test.cpp exception.cpp MatrixLayer.cpp)
 ADD_LIBRARY(lib STATIC ${SOURCES})
 ADD_EXECUTABLE(CourseProject main.cpp)
 TARGET_LINK_LIBRARIES(CourseProject lib)

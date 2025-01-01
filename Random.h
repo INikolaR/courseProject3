@@ -7,8 +7,9 @@ namespace neural_network {
 class Random {
 public:
     Random();
-    Vector givensAngles(size_t size);
-    Vector singularValues(size_t length);
+    void givensAngles(Vector::iterator begin, Vector::iterator end);
+    void singularValues(Vector::iterator begin, Vector::iterator end);
+    Vector kaiming(size_t in, size_t out);
 
 private:
     static constexpr int Seed = 1234567;

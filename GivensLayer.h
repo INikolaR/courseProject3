@@ -7,19 +7,17 @@ namespace neural_network {
 
 class GivensLayer {
 public:
-    GivensLayer(size_t in, size_t out);
     GivensLayer(const Vector& weights, size_t in, size_t out);
     size_t sizeIn() const;
     size_t sizeOut() const;
     Vector forward(const Vector& x) const;
-    Vector forwardWithoutShrinking(const Vector& x) const;
-    SVD backwardCalcGradient(Vector& u, Vector& z) const;
-    void update(const SVD& grad, double step);
+    Vector forwardOnTrain(const Vector& x) const;
+    Vector backwardCalcGradient(Vector& u, const Vector& x, Vector& z) const;
+    void update(const Vector& grad, double step);
 
 private:
     GivensLayer(const SVD& svd, size_t in, size_t out);
 
-    Random rnd_;
     size_t n_;
     size_t m_;
     size_t min_n_m_;

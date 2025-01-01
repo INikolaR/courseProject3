@@ -9,18 +9,6 @@
 
 namespace neural_network {
 
-GivensLayer::GivensLayer(size_t in, size_t out)
-    : rnd_(std::move(Random())),
-      n_(in + 1),
-      m_(out),
-      min_n_m_(std::min(n_, m_)),
-      alpha_(std::move(rnd_.givensAngles(min_n_m_ * (min_n_m_ - 1) / 2 +
-                                         min_n_m_ * (m_ - min_n_m_)))),
-      beta_(std::move(rnd_.givensAngles(min_n_m_ * (min_n_m_ - 1) / 2 +
-                                        min_n_m_ * (n_ - min_n_m_)))),
-      sigma_(std::move(rnd_.singularValues(min_n_m_))) {
-}
-
 GivensLayer::GivensLayer(const Vector& weights, size_t in, size_t out)
     : GivensLayer(getGivensPerfomance(weights, out, in + 1), in, out) {
 }
@@ -58,7 +46,7 @@ Vector GivensLayer::forward(const Vector& x) const {
     return temp;
 }
 
-Vector GivensLayer::forwardWithoutShrinking(const Vector& x) const {
+Vector GivensLayer::forwardOnTrain(const Vector& x) const {
     assert(x.size() == n_ - 1 &&
            "size of x should be the same as input size of layer");
     assert(!x.empty() && "x should be not empty");
@@ -83,17 +71,18 @@ Vector GivensLayer::forwardWithoutShrinking(const Vector& x) const {
     return temp;
 }
 
-SVD GivensLayer::backwardCalcGradient(Vector& u, Vector& z) const {
+Vector GivensLayer::backwardCalcGradient(Vector& u, const Vector& x,
+                                         Vector& z) const {
     assert(u.size() == m_ && "u size should be equal to output size of layer");
     assert(
         z.size() == m_ + n_ - min_n_m_ &&
         "z size should be equal to max(input size + 1; output size) of layer");
-    Vector d_alpha;
-    d_alpha.reserve(alpha_.size());
+    Vector gradient;
+    gradient.reserve(n_ * m_);
     auto alpha_it = alpha_.begin();
     for (size_t col = 0; col < min_n_m_; ++col) {
         for (size_t row = m_ - 1; row > col; --row, ++alpha_it) {
-            d_alpha.emplace_back(z[row] * u[row - 1] - z[row - 1] * u[row]);
+            gradient.emplace_back(z[row] * u[row - 1] - z[row - 1] * u[row]);
             RG(-*alpha_it, row, u);
             G(*alpha_it, row, z);
         }
@@ -107,36 +96,40 @@ SVD GivensLayer::backwardCalcGradient(Vector& u, Vector& z) const {
     Vector d_sigma = u * z;
     z.resize(n_);
     d_sigma.resize(min_n_m_);
+    gradient.insert(gradient.end(), d_sigma.begin(), d_sigma.end());
     u *= sigma_;
     u.resize(n_);
-    Vector d_beta;
-    d_beta.reserve(beta_.size());
     auto beta_it = beta_.rbegin();
     for (size_t col = min_n_m_; col > 0; --col) {
         for (size_t row = col; row < n_; ++row, ++beta_it) {
-            d_beta.emplace_back(z[row - 1] * u[row] - z[row] * u[row - 1]);
+            gradient.emplace_back(z[row - 1] * u[row] - z[row] * u[row - 1]);
             RG(*beta_it, row, u);
             G(-*beta_it, row, z);
         }
     }
-    return SVD{d_alpha, d_sigma, d_beta};
+    return gradient;
 }
 
-void GivensLayer::update(const SVD& grad, double step) {
-    assert(grad.U.size() == alpha_.size() &&
+void GivensLayer::update(const Vector& grad, double step) {
+    assert(grad.size() == sigma_.size() + alpha_.size() + beta_.size() &&
            "different shapes of parameter and graient");
-    assert(grad.V.size() == beta_.size() &&
-           "different shapes of parameter and graient");
-    assert(grad.sigma.size() == sigma_.size() &&
-           "different shapes of parameter and graient");
-    updateVector(alpha_, grad.U, step);
-    updateVector(beta_, grad.V, step);
-    updateVector(sigma_, grad.sigma, step);
+    auto grad_it = grad.begin();
+    for (auto alpha_it = alpha_.begin(); alpha_it != alpha_.end(); ++alpha_it) {
+        *alpha_it -= *grad_it * step;
+        ++grad_it;
+    }
+    for (auto sigma_it = sigma_.begin(); sigma_it != sigma_.end(); ++sigma_it) {
+        *sigma_it -= *grad_it * step;
+        ++grad_it;
+    }
+    for (auto beta_it = beta_.rbegin(); beta_it != beta_.rend(); ++beta_it) {
+        *beta_it -= *grad_it * step;
+        ++grad_it;
+    }
 }
 
 GivensLayer::GivensLayer(const SVD& svd, size_t in, size_t out)
-    : rnd_(std::move(Random())),
-      n_(in + 1),
+    : n_(in + 1),
       m_(out),
       min_n_m_(std::min(n_, m_)),
       alpha_(std::move(svd.U)),

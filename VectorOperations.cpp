@@ -134,6 +134,7 @@ Vector getGivensDecompose(EMatrix& m) {
 }
 
 SVD getGivensPerfomance(const Vector& vector, size_t rows, size_t cols) {
+    std::cout << rows << " " << cols << "\n";
     assert(vector.size() == rows * cols);
     EMatrix m(rows, cols);
     for (int i = 0, counter = 0; i < rows; ++i) {

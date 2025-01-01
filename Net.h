@@ -1,15 +1,16 @@
 #pragma once
 #include <list>
 
-#include "GivensLayer.h"
+#include "ActivationFunction.h"
+#include "CAnyLayer.h"
 #include "LossFunction.h"
 
 namespace neural_network {
 
-class GivensNet {
+class Net {
 public:
-    explicit GivensNet(size_t in, size_t out, ActivationFunction f);
-    void AddLayer(size_t new_out, ActivationFunction f);
+    Net(Linear l, ActivationFunction f);
+    void AddLayer(Linear l, ActivationFunction f);
     Vector predict(const Vector& x) const;
     void fit(const std::vector<TrainUnit>& dataset, const LossFunction& loss,
              size_t n_of_epochs, int batch_size, double step);
@@ -23,12 +24,12 @@ private:
     void trainOneBatch(const std::vector<TrainUnit>::const_iterator begin,
                        const std::vector<TrainUnit>::const_iterator end,
                        const LossFunction& loss, double step);
-    std::vector<SVD> trainOneUnit(const Vector& x, const Vector& y,
-                                  const LossFunction& loss);
-    void addGradients(std::vector<SVD>& a, const std::vector<SVD>& b);
+    std::vector<Vector> trainOneUnit(const Vector& x, const Vector& y,
+                                     const LossFunction& loss);
+    void addGradients(std::vector<Vector>& a, const std::vector<Vector>& b);
     size_t in_;
     size_t out_;
-    std::list<GivensLayer> linear_layers_;
+    std::list<Linear> linear_layers_;
     std::list<ActivationFunction> non_linear_layers_;
 };
 

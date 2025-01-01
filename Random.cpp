@@ -10,20 +10,22 @@ namespace neural_network {
 Random::Random() : engine_(std::mt19937(Seed)) {
 }
 
-Vector Random::givensAngles(size_t size) {
-    Vector generated(size);
+void Random::givensAngles(Vector::iterator begin, Vector::iterator end) {
     std::normal_distribution<double> norm_d{std::acos(-1) / 2, 0.2};
-    std::generate(generated.begin(), generated.end(),
-                  [&]() { return norm_d(engine_); });
-    return generated;
+    std::generate(begin, end, [&]() { return norm_d(engine_); });
 }
 
-Vector Random::singularValues(size_t length) {
+void Random::singularValues(Vector::iterator begin, Vector::iterator end) {
     std::normal_distribution<double> normal_d;
-    Vector generated(length);
+    std::generate(begin, end, [&]() { return normal_d(engine_) + 1; });
+    std::sort(begin, end);
+}
+
+Vector Random::kaiming(size_t in, size_t out) {
+    std::normal_distribution<double> normal_d{0, 2 / sqrt(in)};
+    Vector generated((in + 1) * out);
     std::generate(generated.begin(), generated.end(),
-                  [&]() { return normal_d(engine_) + 1; });
-    std::sort(generated.begin(), generated.end());
+                  [&]() { return normal_d(engine_); });
     return generated;
 }
 
