@@ -29,18 +29,18 @@ Vector GivensLayer::forward(const Vector& x) const {
     temp.reserve(x.size() + 1);
     std::copy(x.begin(), x.end(), back_inserter(temp));
     temp.emplace_back(1.0);
-    auto it_beta = beta_.begin();
+    size_t index_beta = 0;
     for (size_t col = 0; col < min_n_m_; ++col) {
-        for (size_t row = temp.size() - 1; row > col; --row, ++it_beta) {
-            G(*it_beta, row, temp);
+        for (size_t row = n_ - 1; row > col; --row, ++index_beta) {
+            G(beta_[index_beta], row, temp);
         }
     }
     temp.resize(m_);
-    temp *= sigma_;
-    auto it_alpha = alpha_.rbegin();
+    vecnmult(temp, sigma_, min_n_m_);
+    size_t index_alpha = alpha_.size() - 1;
     for (size_t col = min_n_m_; col > 0; --col) {
-        for (size_t row = col; row < temp.size(); ++row, ++it_alpha) {
-            G(-*it_alpha, row, temp);
+        for (size_t row = col; row < m_; ++row, --index_alpha) {
+            G(-alpha_[index_alpha], row, temp);
         }
     }
     return temp;
@@ -54,18 +54,18 @@ Vector GivensLayer::forwardOnTrain(const Vector& x) const {
     temp.reserve(x.size() + 1);
     std::copy(x.begin(), x.end(), back_inserter(temp));
     temp.emplace_back(1.0);
-    auto it_beta = beta_.begin();
+    size_t index_beta = 0;
     for (size_t col = 0; col < min_n_m_; ++col) {
-        for (size_t row = n_ - 1; row > col; --row, ++it_beta) {
-            G(*it_beta, row, temp);
+        for (size_t row = n_ - 1; row > col; --row, ++index_beta) {
+            G(beta_[index_beta], row, temp);
         }
     }
     temp.resize(n_ + m_ - min_n_m_);
-    temp *= sigma_;
-    auto it_alpha = alpha_.rbegin();
+    vecnmult(temp, sigma_, min_n_m_);
+    size_t index_alpha = alpha_.size() - 1;
     for (size_t col = min_n_m_; col > 0; --col) {
-        for (size_t row = col; row < m_; ++row, ++it_alpha) {
-            G(-*it_alpha, row, temp);
+        for (size_t row = col; row < m_; ++row, --index_alpha) {
+            G(-alpha_[index_alpha], row, temp);
         }
     }
     return temp;
@@ -92,12 +92,11 @@ Vector GivensLayer::backwardCalcGradient(Vector& u, const Vector& x,
     for (size_t i = 0; i < sigma_.size(); ++i) {
         asigma.emplace_back(1 / sigma_[i]);
     }
-    z *= asigma;
-    Vector d_sigma = u * z;
+    vecnmult(z, asigma, min_n_m_);
+    Vector d_sigma = elemwisemult(u, z, min_n_m_);
     z.resize(n_);
-    d_sigma.resize(min_n_m_);
     gradient.insert(gradient.end(), d_sigma.begin(), d_sigma.end());
-    u *= sigma_;
+    vecnmult(u, sigma_, min_n_m_);
     u.resize(n_);
     auto beta_it = beta_.rbegin();
     for (size_t col = min_n_m_; col > 0; --col) {

@@ -200,7 +200,7 @@ void test_mnist() {
     Vector w1 = rnd.kaiming(10, 10);
     givens_net.AddLayer(Linear{GivensLayer(w1, 10, 10)},
                         ActivationFunction::Sigmoid());
-    matrix_net.AddLayer(Linear{GivensLayer(w1, 10, 10)},
+    matrix_net.AddLayer(Linear{MatrixLayer(w1, 10, 10)},
                         ActivationFunction::Sigmoid());
     double step = 0.055;
     for (size_t i = 0; i < 50; ++i) {

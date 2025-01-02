@@ -134,7 +134,6 @@ Vector getGivensDecompose(EMatrix& m) {
 }
 
 SVD getGivensPerfomance(const Vector& vector, size_t rows, size_t cols) {
-    std::cout << rows << " " << cols << "\n";
     assert(vector.size() == rows * cols);
     EMatrix m(rows, cols);
     for (int i = 0, counter = 0; i < rows; ++i) {
@@ -148,6 +147,21 @@ SVD getGivensPerfomance(const Vector& vector, size_t rows, size_t cols) {
     EMatrix s = svd.singularValues();
     return SVD{getGivensDecompose(u), Vector(s.data(), s.data() + s.size()),
                getGivensDecompose(v)};
+}
+
+void vecnmult(Vector& a, const Vector& b, size_t n) {
+    for (size_t i = 0; i < n; ++i) {
+        a[i] = a[i] * b[i];
+    }
+}
+
+Vector elemwisemult(const Vector& a, const Vector& b, size_t n) {
+    Vector mult;
+    mult.reserve(n);
+    for (size_t i = 0; i < n; ++i) {
+        mult.emplace_back(a[i] * b[i]);
+    }
+    return mult;
 }
 
 }  // namespace neural_network
