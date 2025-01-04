@@ -83,6 +83,14 @@ double dot(const Vector& a, const Vector& b) {
     return dot;
 }
 
+double dotn(Vector::const_iterator a, Vector::const_iterator b, size_t n) {
+    double dot = 0.0;
+    for (size_t i = 0; i < n; ++i, ++a, ++b) {
+        dot += *a * *b;
+    }
+    return dot;
+}
+
 void G(double angle, size_t row, Vector& v) {
     assert(row > 0);
     assert(row <= v.size() - 1);
@@ -99,6 +107,23 @@ void RG(double angle, size_t row, Vector& v) {
     double t2 = -v[row - 1] * std::sin(angle) + v[row] * std::cos(angle);
     v[row - 1] = t1;
     v[row] = t2;
+}
+
+void H(Vector::const_iterator begin, Vector::const_iterator end, Vector& v) {
+    H(begin, end, v, v.size());
+}
+
+void H(Vector::const_iterator begin, Vector::const_iterator end, Vector& v,
+       size_t v_size) {
+    double mult = 0;
+    auto it = end;
+    for (size_t i = v_size - 1; it != begin; --i, --it) {
+        mult += v[i] * *(it - 1);
+    }
+    it = end;
+    for (size_t i = v_size - 1; it != begin; --i, --it) {
+        v[i] -= 2 * *(it - 1) * mult;
+    }
 }
 
 size_t argmax(const Vector& a) {
@@ -122,8 +147,6 @@ Vector getGivensDecompose(EMatrix& m) {
                   m.cols() * (m.rows() - m.cols()));
     for (size_t col = 0; col < m.cols(); ++col) {
         for (size_t row = m.rows() - 1; row > col; --row) {
-            double temp_sqrt = sqrt(m(row, col) * m(row, col) +
-                                    m(row - 1, col) * m(row - 1, col));
             double angle = atan2(-m(row, col), m(row - 1, col));
             EMatrix g{{cos(angle), -sin(angle)}, {sin(angle), cos(angle)}};
             m.block(row - 1, 0, 2, m.cols()).applyOnTheLeft(g);
@@ -131,6 +154,19 @@ Vector getGivensDecompose(EMatrix& m) {
         }
     }
     return svd_m;
+}
+
+void appendHouseholderDecompose(EMatrix& m, Vector& w) {
+    for (size_t col = 0; col < m.cols(); ++col) {
+        EVector c = m.col(col);
+        c(col, 0) -= 1;
+        c.normalize();
+        for (size_t i = col; i < m.rows(); ++i) {
+            w.emplace_back(c(i, 0));
+        }
+        m.applyOnTheLeft(EMatrix::Identity(c.size(), c.size()) -
+                         2 * c * c.transpose());
+    }
 }
 
 SVD getGivensPerfomance(const Vector& vector, size_t rows, size_t cols) {
@@ -149,9 +185,37 @@ SVD getGivensPerfomance(const Vector& vector, size_t rows, size_t cols) {
                getGivensDecompose(v)};
 }
 
+Vector getHouseholderPerfomance(const Vector& vector, size_t rows,
+                                size_t cols) {
+    assert(vector.size() == rows * cols);
+    EMatrix m(rows, cols);
+    for (int i = 0, counter = 0; i < rows; ++i) {
+        for (int j = 0; j < cols; ++j, ++counter) {
+            m(i, j) = vector[counter];
+        }
+    }
+    Eigen::JacobiSVD<EMatrix> svd(m, Eigen::ComputeThinU | Eigen::ComputeThinV);
+    EMatrix u = svd.matrixU();
+    EMatrix v = svd.matrixV();
+    EMatrix s = svd.singularValues();
+    Vector w;
+    w.reserve(rows * cols + 2 * std::min(rows, cols));
+    appendHouseholderDecompose(u, w);
+    Vector ss(s.data(), s.data() + s.size());
+    w.insert(w.end(), ss.begin(), ss.end());
+    appendHouseholderDecompose(v, w);
+    return w;
+}
+
+void vecnmult(Vector::iterator a, Vector::const_iterator b, size_t n) {
+    for (size_t i = 0; i < n; ++i, ++a, ++b) {
+        *a *= *b;
+    }
+}
+
 void vecnmult(Vector& a, const Vector& b, size_t n) {
     for (size_t i = 0; i < n; ++i) {
-        a[i] = a[i] * b[i];
+        a[i] *= b[i];
     }
 }
 

@@ -10,6 +10,7 @@
 #include <string>
 
 #include "GivensLayer.h"
+#include "HouseholderLayer.h"
 #include "MatrixLayer.h"
 
 namespace neural_network {
@@ -197,12 +198,16 @@ void test_mnist() {
                    ActivationFunction::LeakyReLU());
     Net matrix_net(Linear{MatrixLayer(w0, 784, 10)},
                    ActivationFunction::LeakyReLU());
+    Net householder_net(Linear{HouseholderLayer(w0, 784, 10)},
+                        ActivationFunction::LeakyReLU());
     Vector w1 = rnd.kaiming(10, 10);
     givens_net.AddLayer(Linear{GivensLayer(w1, 10, 10)},
                         ActivationFunction::Sigmoid());
     matrix_net.AddLayer(Linear{MatrixLayer(w1, 10, 10)},
                         ActivationFunction::Sigmoid());
-    double step = 0.055;
+    householder_net.AddLayer(Linear{HouseholderLayer(w1, 10, 10)},
+                             ActivationFunction::Sigmoid());
+    double step = 0.05;
     for (size_t i = 0; i < 50; ++i) {
         double curr_loss = simple_test_loss_accuracy(
             "MNIST GIVENS", givens_net, train, LossFunction::Euclid(), test,
@@ -210,6 +215,9 @@ void test_mnist() {
         double curr_loss_2 = simple_test_loss_accuracy(
             "MNIST MATRIX", matrix_net, train, LossFunction::Euclid(), test,
             LossFunction::Euclid(), 1, 10, step);
+        double curr_loss_3 = simple_test_loss_accuracy(
+            "MNIST HOUSEHOLDER", householder_net, train, LossFunction::Euclid(),
+            test, LossFunction::Euclid(), 1, 10, step);
     }
 }
 

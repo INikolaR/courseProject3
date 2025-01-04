@@ -58,7 +58,8 @@ Vector MatrixLayer::forwardOnTrain(const Vector& x) const {
 Vector MatrixLayer::backwardCalcGradient(Vector& u, const Vector& x,
                                          Vector& z) const {
     assert(u.size() == m_ && "u size should be equal to output size of layer");
-    assert(x.size() == n_ && "x size should be equal to input size of layer");
+    assert(x.size() == n_ - 1 &&
+           "x size should be equal to input size of layer");
     Vector grad;
     grad.reserve(n_ * m_);
     for (size_t i = 0; i < m_; ++i) {
