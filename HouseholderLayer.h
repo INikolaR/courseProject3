@@ -1,11 +1,13 @@
 #pragma once
 
 #include "CustomTypes.h"
+#include "Random.h"
 
 namespace neural_network {
 class HouseholderLayer {
 public:
     HouseholderLayer(const Vector& weights, size_t in, size_t out);
+    HouseholderLayer(Random& rnd, size_t in, size_t out);
     size_t sizeIn() const;
     size_t sizeOut() const;
     Vector forward(const Vector& x) const;

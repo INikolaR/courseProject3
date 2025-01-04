@@ -88,7 +88,7 @@ std::vector<TrainUnit> parseMNISTDataset(
     }
 
     std::vector<TrainUnit> dataset(0);
-    for (int i = 0; i < number_of_labels / 6; i++) {
+    for (int i = 0; i < number_of_labels / 60; i++) {
         dataset.push_back(read_mnist_train_unit(file_images, file_labels,
                                                 size_of_mnist_image));
     }
@@ -151,39 +151,33 @@ void test_echo() {
                      LossFunction::Euclid(), 100, 8, 0.02);
 }
 
-// void test_echo_manhattan() {
-//     std::vector<TrainUnit> dataset{{{1}, {1}}, {{2}, {2}}, {{3}, {3}},
-//                                    {{4}, {4}}, {{5}, {5}}, {{6}, {6}},
-//                                    {{7}, {7}}, {{8}, {8}}};
-//     GivensNet net(1, 1, ActivationFunction::LeakyReLU());
-//     simple_test_loss("ECHO MANHATTAN", net, dataset,
-//     LossFunction::Manhattan(),
-//                      dataset, LossFunction::Manhattan(), 1000, 1, 0.02);
-// }
+void test_sum() {
+    std::vector<TrainUnit> dataset{
+        {{1, 1}, {2}}, {{1, 2}, {3}}, {{1, 3}, {4}}, {{1, 4}, {5}},
+        {{2, 1}, {3}}, {{2, 2}, {4}}, {{2, 3}, {5}}, {{2, 4}, {6}},
+        {{3, 1}, {4}}, {{3, 2}, {5}}, {{3, 3}, {6}}, {{3, 4}, {7}},
+        {{4, 1}, {5}}, {{4, 2}, {6}}, {{4, 3}, {7}}, {{4, 4}, {8}}};
+    Random rnd;
+    Net net(Linear{GivensLayer(rnd.kaiming(2, 1), 2, 1)},
+            ActivationFunction::LeakyReLU());
+    simple_test_loss("SUM", net, dataset, LossFunction::Euclid(), dataset,
+                     LossFunction::Euclid(), 100, 16, 0.07);
+}
 
-// void test_sum() {
-//     std::vector<TrainUnit> dataset{
-//         {{1, 1}, {2}}, {{1, 2}, {3}}, {{1, 3}, {4}}, {{1, 4}, {5}},
-//         {{2, 1}, {3}}, {{2, 2}, {4}}, {{2, 3}, {5}}, {{2, 4}, {6}},
-//         {{3, 1}, {4}}, {{3, 2}, {5}}, {{3, 3}, {6}}, {{3, 4}, {7}},
-//         {{4, 1}, {5}}, {{4, 2}, {6}}, {{4, 3}, {7}}, {{4, 4}, {8}}};
-//     GivensNet net(2, 1, ActivationFunction::LeakyReLU());
-//     simple_test_loss("SUM", net, dataset, LossFunction::Euclid(), dataset,
-//                      LossFunction::Euclid(), 1000, 16, 0.07);
-// }
-
-// void test_sum_multi_layers() {
-//     std::vector<TrainUnit> dataset{
-//         {{1, 1}, {2}}, {{1, 2}, {3}}, {{1, 3}, {4}}, {{1, 4}, {5}},
-//         {{2, 1}, {3}}, {{2, 2}, {4}}, {{2, 3}, {5}}, {{2, 4}, {6}},
-//         {{3, 1}, {4}}, {{3, 2}, {5}}, {{3, 3}, {6}}, {{3, 4}, {7}},
-//         {{4, 1}, {5}}, {{4, 2}, {6}}, {{4, 3}, {7}}, {{4, 4}, {8}}};
-//     GivensNet net(2, 3, ActivationFunction::LeakyReLU());
-//     net.AddLayer(1, ActivationFunction::LeakyReLU());
-//     simple_test_loss("SUM MULTI LAYERS", net, dataset,
-//     LossFunction::Euclid(),
-//                      dataset, LossFunction::Euclid(), 1000, 1, 0.015);
-// }
+void test_sum_multi_layers() {
+    std::vector<TrainUnit> dataset{
+        {{1, 1}, {2}}, {{1, 2}, {3}}, {{1, 3}, {4}}, {{1, 4}, {5}},
+        {{2, 1}, {3}}, {{2, 2}, {4}}, {{2, 3}, {5}}, {{2, 4}, {6}},
+        {{3, 1}, {4}}, {{3, 2}, {5}}, {{3, 3}, {6}}, {{3, 4}, {7}},
+        {{4, 1}, {5}}, {{4, 2}, {6}}, {{4, 3}, {7}}, {{4, 4}, {8}}};
+    Random rnd;
+    Net net(Linear{GivensLayer(rnd.kaiming(2, 3), 2, 3)},
+            ActivationFunction::LeakyReLU());
+    net.AddLayer(Linear{GivensLayer(rnd.kaiming(3, 1), 3, 1)},
+                 ActivationFunction::LeakyReLU());
+    simple_test_loss("SUM MULTI LAYERS", net, dataset, LossFunction::Euclid(),
+                     dataset, LossFunction::Euclid(), 100, 1, 0.015);
+}
 
 void test_mnist() {
     std::vector<TrainUnit> train =
@@ -200,14 +194,14 @@ void test_mnist() {
                    ActivationFunction::LeakyReLU());
     Net householder_net(Linear{HouseholderLayer(w0, 784, 10)},
                         ActivationFunction::LeakyReLU());
-    Vector w1 = rnd.kaiming(10, 10);
+    Vector w1 = rnd.xavier(10, 10);
     givens_net.AddLayer(Linear{GivensLayer(w1, 10, 10)},
                         ActivationFunction::Sigmoid());
     matrix_net.AddLayer(Linear{MatrixLayer(w1, 10, 10)},
                         ActivationFunction::Sigmoid());
     householder_net.AddLayer(Linear{HouseholderLayer(w1, 10, 10)},
                              ActivationFunction::Sigmoid());
-    double step = 0.05;
+    double step = 0.055;
     for (size_t i = 0; i < 50; ++i) {
         double curr_loss = simple_test_loss_accuracy(
             "MNIST GIVENS", givens_net, train, LossFunction::Euclid(), test,
@@ -221,115 +215,27 @@ void test_mnist() {
     }
 }
 
-// void test_vector_output() {
-//     std::vector<TrainUnit> train = {{{}, {5, -0.5}}};
-//     GivensNet net(0, 2, ActivationFunction::LeakyReLU());
-//     simple_test_loss("VECTOR OUTPUT", net, train, LossFunction::Euclid(),
-//     train,
-//                      LossFunction::Euclid(), 1000, 1, 0.5);
-// }
-
-// void test_vector_output2() {
-//     std::vector<TrainUnit> train = {{{}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 1}}};
-//     GivensNet net(0, 256, ActivationFunction::Sigmoid());
-//     net.AddLayer(10, ActivationFunction::Sigmoid());
-//     simple_test_loss("VECTOR OUTPUT", net, train, LossFunction::Euclid(),
-//     train,
-//                      LossFunction::Euclid(), 10, 1, 1.7);
-// }
-
-// void test_square() {
-//     std::vector<TrainUnit> train = {{{0.1}, {0.01}},
-//                                     {{0.2}, {0.04}},
-//                                     {{0.3}, {0.09}},
-//                                     {{0.4}, {0.16}},
-//                                     {{0.5}, {0.25}}};
-//     GivensNet net(1, 5, ActivationFunction::LeakyReLU());
-//     net.AddLayer(1, ActivationFunction::Id());
-//     simple_test_loss("SQUARE", net, train, LossFunction::Euclid(), train,
-//                      LossFunction::Euclid(), 1000, 10, 0.001);
-// }
-
-// void nonlinear_test() {
-//     std::vector<TrainUnit> train = {{{1}, {3}}, {{2}, {4}}, {{3}, {9}}};
-//     GivensNet net(1, 5, ActivationFunction::LeakyReLU());
-//     net.AddLayer(1, ActivationFunction::Id());
-//     simple_test_loss("NON LINEAR", net, train, LossFunction::Euclid(), train,
-//                      LossFunction::Euclid(), 100, 3, 0.11);
-// }
-
-// void test_one_layer_4x4() {
-//     std::vector<TrainUnit> train = {{{1, 2, 3}, {1, 4, 9, 2}},
-//                                     {{0, 0, 2}, {1, 2, 3, 4}},
-//                                     {{1, 2, 0}, {0, 3, 0, 2}}};
-//     GivensNet net(3, 4, ActivationFunction::Id());
-//     simple_test_loss("YET ANOTHER", net, train, LossFunction::Euclid(),
-//     train,
-//                      LossFunction::Euclid(), 100, 3, 0.01);
-// }
-
-// void test_one_layer_3x4() {
-//     std::vector<TrainUnit> train = {
-//         {{1, 2}, {1, 4, 9, 2}}, {{0, 2}, {1, 2, 3, 4}}, {{1, 2}, {0, 3, 0,
-//         2}}};
-//     GivensNet net(2, 4, ActivationFunction::Id());
-//     simple_test_loss("YET ANOTHER", net, train, LossFunction::Euclid(),
-//     train,
-//                      LossFunction::Euclid(), 100, 3, 0.1);
-// }
-
-// void test_one_layer_4x3() {
-//     std::vector<TrainUnit> train = {
-//         {{1, 2, 3}, {1, 4, 9}}, {{0, 2, 2}, {1, 2, 3}}, {{1, 2, 0}, {0, 3,
-//         2}}};
-//     GivensNet net(3, 3, ActivationFunction::LeakyReLU());
-//     simple_test_loss("YET ANOTHER", net, train, LossFunction::Euclid(),
-//     train,
-//                      LossFunction::Euclid(), 100, 3, 0.1);
-// }
-
-// void test_givens_layer() {
-//     Vector w = {1, 2, 3, 4};
-//     GivensLayer l(w, 1, 2);
-//     Vector u = {3, 4};
-//     Vector z = {1, 2};
-//     SVD svd = l.backwardCalcGradient(u, z);
-//     for (double e : svd.U) {
-//         std::cout << " " << e << "\n";
-//     }
-//     for (double e : svd.sigma) {
-//         std::cout << " " << e << "\n";
-//     }
-//     for (double e : svd.V) {
-//         std::cout << " " << e << "\n";
-//     }
-//     std::cout << "u = \n";
-//     for (double e : u) {
-//         std::cout << " " << e << "\n";
-//     }
-//     std::cout << "z = \n";
-//     for (double e : z) {
-//         std::cout << " " << e << "\n";
-//     }
-// }
+void test_square() {
+    std::vector<TrainUnit> train = {{{0.1}, {0.01}},
+                                    {{0.2}, {0.04}},
+                                    {{0.3}, {0.09}},
+                                    {{0.4}, {0.16}},
+                                    {{0.5}, {0.25}}};
+    Random rnd;
+    Net net(Linear{GivensLayer(rnd.kaiming(1, 5), 1, 5)},
+            ActivationFunction::LeakyReLU());
+    net.AddLayer(Linear{GivensLayer(rnd.kaiming(5, 1), 5, 1)},
+                 ActivationFunction::Id());
+    simple_test_loss("SQUARE", net, train, LossFunction::Euclid(), train,
+                     LossFunction::Euclid(), 1000, 10, 0.001);
+}
 
 void run_all_tests() {
-    // test_vector_output();
     // test_echo();
-    // test_echo_manhattan();
     // test_sum();
     // test_sum_multi_layers();
     // test_square();
-    // test_vector_output2();
-    // nonlinear_test();
-    // test_one_layer_4x4();
-    // test_one_layer_3x4();
-    // test_one_layer_4x3();
     test_mnist();
-    // getGivensPerfomance({1, 2, 3.55555555555555, 4, 5, 6, 7, 8, 9, 10, 11,
-    // 12, 13, 14, 15}, 3,
-    //                     5);
-    // test_givens_layer();
 }
 
 }  // namespace neural_network

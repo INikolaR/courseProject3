@@ -2,6 +2,7 @@
 
 #include <iostream>
 
+#include "Random.h"
 #include "VectorOperations.h"
 
 namespace neural_network {
@@ -28,6 +29,10 @@ HouseholderLayer::HouseholderLayer(const Vector& weights, size_t in, size_t out)
         v_it += n_ - col;
     }
     v_.emplace_back(v_it);
+}
+
+HouseholderLayer::HouseholderLayer(Random& rnd, size_t in, size_t out)
+    : HouseholderLayer(rnd.xavier(in, out), in, out) {
 }
 
 size_t HouseholderLayer::sizeIn() const {
@@ -160,6 +165,7 @@ void HouseholderLayer::update(const Vector& grad, double step) {
     for (auto sigma_it = u_.back(); sigma_it != v_.front();
          ++sigma_it, ++grad_it) {
         *sigma_it -= *grad_it * step;
+        *sigma_it = 2 * 0.001 * (1 / (1 + exp(-*sigma_it)) - 0.5) + 1;
     }
     for (auto end_curr_v_it = v_.rbegin(); end_curr_v_it != v_.rend() - 1;
          ++end_curr_v_it) {

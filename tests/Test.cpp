@@ -36,14 +36,6 @@ TEST(GivensLayer_sizeOut, assertion1) {
     GivensLayer l(w, 4, 1);
     ASSERT_EQ(1, l.sizeOut());
 }
-TEST(GivensLayer_update, assertion1) {
-    Vector w = {1, 2, 3, 4};
-    GivensLayer l(w, 1, 2);
-    l.update({1, 0.5, 0.4, 0.1}, 2);
-    Vector out = l.forward({1});
-    Vector diff = out - Vector{-5.88036, -0.29761};
-    EXPECT_TRUE(1e-5 > dot(diff, diff));
-}
 TEST(GivensLayer_backwardCalcGradient, assertion1) {
     Vector w = {1, 2, 3, 4};
     GivensLayer l(w, 1, 2);

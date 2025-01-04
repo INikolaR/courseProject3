@@ -21,11 +21,30 @@ void Random::singularValues(Vector::iterator begin, Vector::iterator end) {
     std::sort(begin, end);
 }
 
-Vector Random::kaiming(size_t in, size_t out) {
-    std::normal_distribution<double> normal_d{0, 2 / sqrt(in)};
+Vector Random::normal(size_t in, size_t out) {
+    std::normal_distribution<double> normal_d{0, 1};
     Vector generated((in + 1) * out);
     std::generate(generated.begin(), generated.end(),
                   [&]() { return normal_d(engine_); });
+    return generated;
+}
+
+Vector Random::kaiming(size_t in, size_t out) {
+    std::normal_distribution<double> normal_d{
+        0, sqrt(2 / static_cast<double>(in))};
+    Vector generated((in + 1) * out);
+    std::generate(generated.begin(), generated.end(),
+                  [&]() { return normal_d(engine_); });
+    return generated;
+}
+
+Vector Random::xavier(size_t in, size_t out) {
+    std::uniform_real_distribution<double> u_d{
+        -sqrt(6 / static_cast<double>(in + out)),
+        sqrt(6 / static_cast<double>(in + out))};
+    Vector generated((in + 1) * out);
+    std::generate(generated.begin(), generated.end(),
+                  [&]() { return u_d(engine_); });
     return generated;
 }
 

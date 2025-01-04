@@ -9,6 +9,10 @@ MatrixLayer::MatrixLayer(const Vector& w, size_t in, size_t out)
     : w_(w), n_(in + 1), m_(out) {
 }
 
+MatrixLayer::MatrixLayer(Random& rnd, size_t in, size_t out)
+    : MatrixLayer(rnd.xavier(in, out), in, out) {
+}
+
 size_t MatrixLayer::sizeIn() const {
     return n_ - 1;
 }
@@ -38,21 +42,6 @@ Vector MatrixLayer::forward(const Vector& x) const {
 // this is needed for supporting a single interface
 Vector MatrixLayer::forwardOnTrain(const Vector& x) const {
     return forward(x);
-    // Vector res;
-    // res.reserve(std::max(m_, n_));
-    // size_t counter = 0;
-    // for (size_t row = 0; row < m_; ++row) {
-    //     double e = 0;
-    //     for (size_t col = 0; col < n_ - 1; ++col) {
-    //         e += x[col] * w_[counter++];
-    //     }
-    //     e += w_[counter++];
-    //     res.emplace_back(e);
-    // }
-    // for (int i = 0; i < std::max(n_, m_) - m_; ++i) {
-    //     res.emplace_back(0);
-    // }
-    // return res;
 }
 
 Vector MatrixLayer::backwardCalcGradient(Vector& u, const Vector& x,

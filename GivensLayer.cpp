@@ -13,6 +13,10 @@ GivensLayer::GivensLayer(const Vector& weights, size_t in, size_t out)
     : GivensLayer(getGivensPerfomance(weights, out, in + 1), in, out) {
 }
 
+GivensLayer::GivensLayer(Random& rnd, size_t in, size_t out)
+    : GivensLayer(rnd.xavier(in, out), in, out) {
+}
+
 size_t GivensLayer::sizeIn() const {
     return n_ - 1;
 }
@@ -120,6 +124,7 @@ void GivensLayer::update(const Vector& grad, double step) {
     for (auto sigma_it = sigma_.begin(); sigma_it != sigma_.end(); ++sigma_it) {
         *sigma_it -= *grad_it * step;
         ++grad_it;
+        *sigma_it = 2 * 0.001 * (1 / (1 + exp(-*sigma_it)) - 0.5) + 1;
     }
     for (auto beta_it = beta_.rbegin(); beta_it != beta_.rend(); ++beta_it) {
         *beta_it -= *grad_it * step;
