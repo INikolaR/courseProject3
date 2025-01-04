@@ -17,14 +17,13 @@ public:
     void update(const Vector& grad, double step);
 
 private:
-    GivensLayer(const SVD& svd, size_t in, size_t out);
-
     size_t n_;
     size_t m_;
     size_t min_n_m_;
-    Vector alpha_;
-    Vector beta_;
-    Vector sigma_;
+    Vector w_;
+    Vector::iterator alpha_;
+    Vector::iterator sigma_;
+    Vector::iterator beta_;
 };
 
 }  // namespace neural_network

@@ -141,19 +141,15 @@ size_t argmax(const Vector& a) {
     return max_index;
 }
 
-Vector getGivensDecompose(EMatrix& m) {
-    Vector svd_m;
-    svd_m.reserve(m.cols() * (m.cols() - 1) / 2 +
-                  m.cols() * (m.rows() - m.cols()));
+void appendGivensDecompose(EMatrix& m, Vector& w) {
     for (size_t col = 0; col < m.cols(); ++col) {
         for (size_t row = m.rows() - 1; row > col; --row) {
             double angle = atan2(-m(row, col), m(row - 1, col));
             EMatrix g{{cos(angle), -sin(angle)}, {sin(angle), cos(angle)}};
             m.block(row - 1, 0, 2, m.cols()).applyOnTheLeft(g);
-            svd_m.emplace_back(angle);
+            w.emplace_back(angle);
         }
     }
-    return svd_m;
 }
 
 void appendHouseholderDecompose(EMatrix& m, Vector& w) {
@@ -169,7 +165,7 @@ void appendHouseholderDecompose(EMatrix& m, Vector& w) {
     }
 }
 
-SVD getGivensPerfomance(const Vector& vector, size_t rows, size_t cols) {
+Vector getGivensPerfomance(const Vector& vector, size_t rows, size_t cols) {
     assert(vector.size() == rows * cols);
     EMatrix m(rows, cols);
     for (int i = 0, counter = 0; i < rows; ++i) {
@@ -181,8 +177,13 @@ SVD getGivensPerfomance(const Vector& vector, size_t rows, size_t cols) {
     EMatrix u = svd.matrixU();
     EMatrix v = svd.matrixV();
     EMatrix s = svd.singularValues();
-    return SVD{getGivensDecompose(u), Vector(s.data(), s.data() + s.size()),
-               getGivensDecompose(v)};
+    Vector w;
+    w.reserve(rows * cols);
+    appendGivensDecompose(u, w);
+    Vector ss(s.data(), s.data() + s.size());
+    w.insert(w.end(), ss.begin(), ss.end());
+    appendGivensDecompose(v, w);
+    return w;
 }
 
 Vector getHouseholderPerfomance(const Vector& vector, size_t rows,

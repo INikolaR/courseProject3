@@ -23,7 +23,7 @@ void H(Vector::const_iterator begin, Vector::const_iterator end, Vector& v);
 void H(Vector::const_iterator begin, Vector::const_iterator end, Vector& v,
        size_t v_size);
 size_t argmax(const Vector& a);
-SVD getGivensPerfomance(const Vector& v, size_t rows, size_t cols);
+Vector getGivensPerfomance(const Vector& v, size_t rows, size_t cols);
 Vector getHouseholderPerfomance(const Vector& v, size_t rows, size_t cols);
 void vecnmult(Vector::iterator a, Vector::const_iterator b, size_t n);
 void vecnmult(Vector& a, const Vector& b, size_t n);

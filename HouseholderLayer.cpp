@@ -1,5 +1,6 @@
 #include "HouseholderLayer.h"
 
+#include <cassert>
 #include <iostream>
 
 #include "Random.h"

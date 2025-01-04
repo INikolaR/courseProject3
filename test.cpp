@@ -187,20 +187,24 @@ void test_mnist() {
         parseMNISTDataset("../t10k-images-idx3-ubyte/t10k-images.idx3-ubyte",
                           "../t10k-labels-idx1-ubyte/t10k-labels.idx1-ubyte");
     Random rnd;
-    Vector w0 = rnd.kaiming(784, 10);
-    Net givens_net(Linear{GivensLayer(w0, 784, 10)},
+    size_t input_size = 784;
+    size_t hid_size = 32;
+    size_t output_size = 10;
+    Vector w0 = rnd.kaiming(input_size, hid_size);
+    Net givens_net(Linear{GivensLayer(w0, input_size, hid_size)},
                    ActivationFunction::LeakyReLU());
-    Net matrix_net(Linear{MatrixLayer(w0, 784, 10)},
+    Net matrix_net(Linear{MatrixLayer(w0, input_size, hid_size)},
                    ActivationFunction::LeakyReLU());
-    Net householder_net(Linear{HouseholderLayer(w0, 784, 10)},
+    Net householder_net(Linear{HouseholderLayer(w0, input_size, hid_size)},
                         ActivationFunction::LeakyReLU());
-    Vector w1 = rnd.xavier(10, 10);
-    givens_net.AddLayer(Linear{GivensLayer(w1, 10, 10)},
+    Vector w1 = rnd.xavier(hid_size, output_size);
+    givens_net.AddLayer(Linear{GivensLayer(w1, hid_size, output_size)},
                         ActivationFunction::Sigmoid());
-    matrix_net.AddLayer(Linear{MatrixLayer(w1, 10, 10)},
+    matrix_net.AddLayer(Linear{MatrixLayer(w1, hid_size, output_size)},
                         ActivationFunction::Sigmoid());
-    householder_net.AddLayer(Linear{HouseholderLayer(w1, 10, 10)},
-                             ActivationFunction::Sigmoid());
+    householder_net.AddLayer(
+        Linear{HouseholderLayer(w1, hid_size, output_size)},
+        ActivationFunction::Sigmoid());
     double step = 0.055;
     for (size_t i = 0; i < 50; ++i) {
         double curr_loss = simple_test_loss_accuracy(
