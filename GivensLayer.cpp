@@ -94,7 +94,7 @@ Vector GivensLayer::backwardCalcGradient(Vector& u, const Vector& x,
     for (size_t col = 0; col < min_n_m_; ++col) {
         for (size_t row = m_ - 1; row > col; --row, ++alpha_it) {
             gradient.emplace_back(z[row] * u[row - 1] - z[row - 1] * u[row]);
-            RG(-*alpha_it, row, u);
+            G(*alpha_it, row, u);
             G(*alpha_it, row, z);
         }
     }
@@ -113,7 +113,7 @@ Vector GivensLayer::backwardCalcGradient(Vector& u, const Vector& x,
     for (size_t col = min_n_m_; col > 0; --col) {
         for (size_t row = col; row < n_; ++row, ++beta_it) {
             gradient.emplace_back(z[row - 1] * u[row] - z[row] * u[row - 1]);
-            RG(*beta_it, row, u);
+            G(-*beta_it, row, u);
             G(-*beta_it, row, z);
         }
     }

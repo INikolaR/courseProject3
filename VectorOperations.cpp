@@ -68,13 +68,6 @@ void updateVector(Vector& v, const Vector& dv, double step) {
     }
 }
 
-void updateReversedVector(Vector& v, const Vector& dv, double step) {
-    assert(v.size() == dv.size());
-    for (size_t i = 0; i < v.size(); ++i) {
-        v[i] -= step * dv[v.size() - i - 1];
-    }
-}
-
 double dot(const Vector& a, const Vector& b) {
     double dot = 0.0;
     for (size_t i = 0; i < std::min(a.size(), b.size()); ++i) {
@@ -96,15 +89,6 @@ void G(double angle, size_t row, Vector& v) {
     assert(row <= v.size() - 1);
     double t1 = v[row - 1] * std::cos(angle) - v[row] * std::sin(angle);
     double t2 = v[row - 1] * std::sin(angle) + v[row] * std::cos(angle);
-    v[row - 1] = t1;
-    v[row] = t2;
-}
-
-void RG(double angle, size_t row, Vector& v) {
-    assert(row > 0);
-    assert(row <= v.size() - 1);
-    double t1 = v[row - 1] * std::cos(angle) + v[row] * std::sin(angle);
-    double t2 = -v[row - 1] * std::sin(angle) + v[row] * std::cos(angle);
     v[row - 1] = t1;
     v[row] = t2;
 }
