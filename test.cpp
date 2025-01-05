@@ -88,7 +88,7 @@ std::vector<TrainUnit> parseMNISTDataset(
     }
 
     std::vector<TrainUnit> dataset(0);
-    for (int i = 0; i < number_of_labels / 60; i++) {
+    for (int i = 0; i < number_of_labels; i++) {
         dataset.push_back(read_mnist_train_unit(file_images, file_labels,
                                                 size_of_mnist_image));
     }

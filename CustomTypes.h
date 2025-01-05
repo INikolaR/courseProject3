@@ -10,4 +10,9 @@ struct TrainUnit {
     Vector x;
     Vector y;
 };
+struct SVD {
+    Vector U;
+    Vector sigma;
+    Vector V;
+};
 }  // namespace neural_network

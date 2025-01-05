@@ -17,14 +17,17 @@ void updateVector(Vector& v, const Vector& dv, double step);
 double dot(const Vector& a, const Vector& b);
 double dotn(Vector::const_iterator a, Vector::const_iterator b, size_t n);
 void G(double angle, size_t row, Vector& v);
+void G(double sin, double cos, size_t row, Vector& v);
 void H(Vector::const_iterator begin, Vector::const_iterator end, Vector& v);
 void H(Vector::const_iterator begin, Vector::const_iterator end, Vector& v,
        size_t v_size);
 size_t argmax(const Vector& a);
-Vector getGivensPerfomance(const Vector& v, size_t rows, size_t cols);
+SVD getGivensPerfomance(const Vector& v, size_t rows, size_t cols);
 Vector getHouseholderPerfomance(const Vector& v, size_t rows, size_t cols);
 void vecnmult(Vector::iterator a, Vector::const_iterator b, size_t n);
 void vecnmult(Vector& a, const Vector& b, size_t n);
 Vector elemwisemult(const Vector& a, const Vector& b, size_t n);
+Vector sinus(const Vector& a);
+Vector cosinus(const Vector& a);
 
 }  // namespace neural_network

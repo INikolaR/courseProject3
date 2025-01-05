@@ -87,10 +87,17 @@ double dotn(Vector::const_iterator a, Vector::const_iterator b, size_t n) {
 void G(double angle, size_t row, Vector& v) {
     assert(row > 0);
     assert(row <= v.size() - 1);
-    double t1 = v[row - 1] * std::cos(angle) - v[row] * std::sin(angle);
-    double t2 = v[row - 1] * std::sin(angle) + v[row] * std::cos(angle);
+    double t1 = v[row - 1] * cos(angle) - v[row] * sin(angle);
+    v[row] = v[row - 1] * sin(angle) + v[row] * cos(angle);
     v[row - 1] = t1;
-    v[row] = t2;
+}
+
+void G(double sin, double cos, size_t row, Vector& v) {
+    assert(row > 0);
+    assert(row <= v.size() - 1);
+    double t1 = v[row - 1] * cos - v[row] * sin;
+    v[row] = v[row - 1] * sin + v[row] * cos;
+    v[row - 1] = t1;
 }
 
 void H(Vector::const_iterator begin, Vector::const_iterator end, Vector& v) {
@@ -149,8 +156,9 @@ void appendHouseholderDecompose(EMatrix& m, Vector& w) {
     }
 }
 
-Vector getGivensPerfomance(const Vector& vector, size_t rows, size_t cols) {
+SVD getGivensPerfomance(const Vector& vector, size_t rows, size_t cols) {
     assert(vector.size() == rows * cols);
+    size_t min_rows_cols = std::min(rows, cols);
     EMatrix m(rows, cols);
     for (int i = 0, counter = 0; i < rows; ++i) {
         for (int j = 0; j < cols; ++j, ++counter) {
@@ -161,13 +169,15 @@ Vector getGivensPerfomance(const Vector& vector, size_t rows, size_t cols) {
     EMatrix u = svd.matrixU();
     EMatrix v = svd.matrixV();
     EMatrix s = svd.singularValues();
-    Vector w;
-    w.reserve(rows * cols);
-    appendGivensDecompose(u, w);
-    Vector ss(s.data(), s.data() + s.size());
-    w.insert(w.end(), ss.begin(), ss.end());
-    appendGivensDecompose(v, w);
-    return w;
+    Vector svd_u;
+    svd_u.reserve(min_rows_cols * (min_rows_cols - 1) / 2 +
+                  min_rows_cols * (rows - min_rows_cols));
+    appendGivensDecompose(u, svd_u);
+    Vector svd_v;
+    svd_v.reserve(min_rows_cols * (min_rows_cols - 1) / 2 +
+                  min_rows_cols * (cols - min_rows_cols));
+    appendGivensDecompose(v, svd_v);
+    return {svd_u, Vector(s.data(), s.data() + min_rows_cols), svd_v};
 }
 
 Vector getHouseholderPerfomance(const Vector& vector, size_t rows,
@@ -211,6 +221,24 @@ Vector elemwisemult(const Vector& a, const Vector& b, size_t n) {
         mult.emplace_back(a[i] * b[i]);
     }
     return mult;
+}
+
+Vector sinus(const Vector& a) {
+    Vector result;
+    result.reserve(a.size());
+    for (auto value : a) {
+        result.emplace_back(sin(value));
+    }
+    return result;
+}
+
+Vector cosinus(const Vector& a) {
+    Vector result;
+    result.reserve(a.size());
+    for (auto value : a) {
+        result.emplace_back(cos(value));
+    }
+    return result;
 }
 
 }  // namespace neural_network
