@@ -101,10 +101,9 @@ Vector HouseholderLayer::backwardCalcGradient(Vector& u_grad, const Vector& x,
         double u_z_dot = dotn(*begin_curr_u_it, z_it, m_ - col);
         for (auto it = *begin_curr_u_it; it != *(begin_curr_u_it + 1);
              ++it, ++u_grad_it, ++z_it) {
-            gradient.emplace_back(*u_grad_it * *z_it -
-                                  2 * (*u_grad_it * u_z_dot +
-                                       u_u_grad_dot * *z_it +
-                                       u_z_dot * u_u_grad_dot * 2 * *it));
+            gradient.emplace_back(-2 *
+                                  (*u_grad_it * u_z_dot + u_u_grad_dot * *z_it -
+                                   u_z_dot * u_u_grad_dot * 2 * *it));
         }
         H(*begin_curr_u_it, *(begin_curr_u_it + 1), u_grad, m_);
     }
@@ -132,10 +131,9 @@ Vector HouseholderLayer::backwardCalcGradient(Vector& u_grad, const Vector& x,
         double u_z_dot = dotn(*(end_curr_v_it + 1), z_it, n_ - (col - 1));
         for (auto it = *(end_curr_v_it + 1); it != *end_curr_v_it;
              ++it, ++u_grad_it, ++z_it) {
-            gradient.emplace_back(*u_grad_it * *z_it -
-                                  2 * (*u_grad_it * u_z_dot +
-                                       u_u_grad_dot * *z_it +
-                                       u_z_dot * u_u_grad_dot * 2 * *it));
+            gradient.emplace_back(-2 *
+                                  (*u_grad_it * u_z_dot + u_u_grad_dot * *z_it -
+                                   u_z_dot * u_u_grad_dot * 2 * *it));
         }
         H(*(end_curr_v_it + 1), *end_curr_v_it, u_grad, n_);
     }
@@ -166,7 +164,7 @@ void HouseholderLayer::update(const Vector& grad, double step) {
     for (auto sigma_it = u_.back(); sigma_it != v_.front();
          ++sigma_it, ++grad_it) {
         *sigma_it -= *grad_it * step;
-        *sigma_it = 2 * 0.001 * (1 / (1 + exp(-*sigma_it)) - 0.5) + 1;
+        // *sigma_it = 2 * 0.001 * (1 / (1 + exp(-*sigma_it)) - 0.5) + 1;
     }
     for (auto end_curr_v_it = v_.rbegin(); end_curr_v_it != v_.rend() - 1;
          ++end_curr_v_it) {

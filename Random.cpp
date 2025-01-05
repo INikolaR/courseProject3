@@ -10,6 +10,9 @@ namespace neural_network {
 Random::Random() : engine_(std::mt19937(Seed)) {
 }
 
+Random::Random(int seed) : engine_(std::mt19937(seed)) {
+}
+
 void Random::givensAngles(Vector::iterator begin, Vector::iterator end) {
     std::normal_distribution<double> norm_d{std::acos(-1) / 2, 0.2};
     std::generate(begin, end, [&]() { return norm_d(engine_); });

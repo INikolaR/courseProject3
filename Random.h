@@ -7,6 +7,7 @@ namespace neural_network {
 class Random {
 public:
     Random();
+    Random(int seed);
     void givensAngles(Vector::iterator begin, Vector::iterator end);
     void singularValues(Vector::iterator begin, Vector::iterator end);
     Vector normal(size_t in, size_t out);

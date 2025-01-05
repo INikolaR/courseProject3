@@ -186,27 +186,29 @@ void test_mnist() {
     std::vector<TrainUnit> test =
         parseMNISTDataset("../t10k-images-idx3-ubyte/t10k-images.idx3-ubyte",
                           "../t10k-labels-idx1-ubyte/t10k-labels.idx1-ubyte");
-    Random rnd;
-    size_t input_size = 784;
-    size_t hid_size = 32;
-    size_t output_size = 10;
-    Vector w0 = rnd.kaiming(input_size, hid_size);
-    Net givens_net(Linear{GivensLayer(w0, input_size, hid_size)},
-                   ActivationFunction::LeakyReLU());
-    Net matrix_net(Linear{MatrixLayer(w0, input_size, hid_size)},
-                   ActivationFunction::LeakyReLU());
-    Net householder_net(Linear{HouseholderLayer(w0, input_size, hid_size)},
-                        ActivationFunction::LeakyReLU());
-    Vector w1 = rnd.xavier(hid_size, output_size);
-    givens_net.AddLayer(Linear{GivensLayer(w1, hid_size, output_size)},
-                        ActivationFunction::Sigmoid());
-    matrix_net.AddLayer(Linear{MatrixLayer(w1, hid_size, output_size)},
-                        ActivationFunction::Sigmoid());
-    householder_net.AddLayer(
-        Linear{HouseholderLayer(w1, hid_size, output_size)},
-        ActivationFunction::Sigmoid());
-    double step = 0.055;
-    for (size_t i = 0; i < 50; ++i) {
+    std::vector<int> seeds = {542,  2345, 5674, 5423, 64,
+                              2435, 765,  798,  5234, 23};
+    for (int seed : seeds) {
+        Random rnd(seed);
+        size_t input_size = 784;
+        size_t hid_size = 32;
+        size_t output_size = 10;
+        Vector w0 = rnd.kaiming(input_size, hid_size);
+        Net givens_net(Linear{GivensLayer(w0, input_size, hid_size)},
+                       ActivationFunction::LeakyReLU());
+        Net matrix_net(Linear{MatrixLayer(w0, input_size, hid_size)},
+                       ActivationFunction::LeakyReLU());
+        Net householder_net(Linear{HouseholderLayer(w0, input_size, hid_size)},
+                            ActivationFunction::LeakyReLU());
+        Vector w1 = rnd.xavier(hid_size, output_size);
+        givens_net.AddLayer(Linear{GivensLayer(w1, hid_size, output_size)},
+                            ActivationFunction::Sigmoid());
+        matrix_net.AddLayer(Linear{MatrixLayer(w1, hid_size, output_size)},
+                            ActivationFunction::Sigmoid());
+        householder_net.AddLayer(
+            Linear{HouseholderLayer(w1, hid_size, output_size)},
+            ActivationFunction::Sigmoid());
+        double step = 0.01;
         double curr_loss = simple_test_loss_accuracy(
             "MNIST GIVENS", givens_net, train, LossFunction::Euclid(), test,
             LossFunction::Euclid(), 1, 10, step);
