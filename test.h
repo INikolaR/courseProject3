@@ -19,8 +19,9 @@ void simple_test_loss_accuracy(const std::string& test_name, Net& net,
 void test_echo();
 void test_sum();
 void test_sum_multi_layers();
-void test_mnist();
 void test_square();
+void test_mnist();
+void report_mnist();
 void run_all_tests();
 
 }  // namespace neural_network

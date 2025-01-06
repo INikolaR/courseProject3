@@ -12,6 +12,7 @@
 #include "GivensLayer.h"
 #include "HouseholderLayer.h"
 #include "MatrixLayer.h"
+#include "TestOperations.h"
 
 namespace neural_network {
 
@@ -179,6 +180,21 @@ void test_sum_multi_layers() {
                      dataset, LossFunction::Euclid(), 100, 1, 0.015);
 }
 
+void test_square() {
+    std::vector<TrainUnit> train = {{{0.1}, {0.01}},
+                                    {{0.2}, {0.04}},
+                                    {{0.3}, {0.09}},
+                                    {{0.4}, {0.16}},
+                                    {{0.5}, {0.25}}};
+    Random rnd;
+    Net net(Linear{GivensLayer(rnd.kaiming(1, 5), 1, 5)},
+            ActivationFunction::LeakyReLU());
+    net.AddLayer(Linear{GivensLayer(rnd.kaiming(5, 1), 5, 1)},
+                 ActivationFunction::Id());
+    simple_test_loss("SQUARE", net, train, LossFunction::Euclid(), train,
+                     LossFunction::Euclid(), 1000, 10, 0.001);
+}
+
 void test_mnist() {
     std::vector<TrainUnit> train =
         parseMNISTDataset("../train-images-idx3-ubyte/train-images.idx3-ubyte",
@@ -221,19 +237,69 @@ void test_mnist() {
     }
 }
 
-void test_square() {
-    std::vector<TrainUnit> train = {{{0.1}, {0.01}},
-                                    {{0.2}, {0.04}},
-                                    {{0.3}, {0.09}},
-                                    {{0.4}, {0.16}},
-                                    {{0.5}, {0.25}}};
-    Random rnd;
-    Net net(Linear{GivensLayer(rnd.kaiming(1, 5), 1, 5)},
-            ActivationFunction::LeakyReLU());
-    net.AddLayer(Linear{GivensLayer(rnd.kaiming(5, 1), 5, 1)},
-                 ActivationFunction::Id());
-    simple_test_loss("SQUARE", net, train, LossFunction::Euclid(), train,
-                     LossFunction::Euclid(), 1000, 10, 0.001);
+void report_mnist() {
+    std::vector<TrainUnit> train =
+        parseMNISTDataset("../train-images-idx3-ubyte/train-images.idx3-ubyte",
+                          "../train-labels-idx1-ubyte/train-labels.idx1-ubyte");
+    std::vector<TrainUnit> test =
+        parseMNISTDataset("../t10k-images-idx3-ubyte/t10k-images.idx3-ubyte",
+                          "../t10k-labels-idx1-ubyte/t10k-labels.idx1-ubyte");
+    std::vector<int> seeds = {542,  2345, 5674, 5423, 64,
+                              2435, 765,  798,  5234, 23};
+    for (int seed : seeds) {
+        Random rnd(seed);
+        size_t input_size = 784;
+        size_t hid_size = 32;
+        size_t output_size = 10;
+        Vector w0 = rnd.kaiming(input_size, hid_size);
+        Net givens_net(Linear{GivensLayer(w0, input_size, hid_size)},
+                       ActivationFunction::LeakyReLU());
+        Net matrix_net(Linear{MatrixLayer(w0, input_size, hid_size)},
+                       ActivationFunction::LeakyReLU());
+        Net householder_net(Linear{HouseholderLayer(w0, input_size, hid_size)},
+                            ActivationFunction::LeakyReLU());
+        Vector w1 = rnd.xavier(hid_size, output_size);
+        givens_net.AddLayer(Linear{GivensLayer(w1, hid_size, output_size)},
+                            ActivationFunction::Sigmoid());
+        matrix_net.AddLayer(Linear{MatrixLayer(w1, hid_size, output_size)},
+                            ActivationFunction::Sigmoid());
+        householder_net.AddLayer(
+            Linear{HouseholderLayer(w1, hid_size, output_size)},
+            ActivationFunction::Sigmoid());
+        size_t batch_size = 8;
+        double step = 0.01;
+        size_t n_of_epochs = 1;
+        std::chrono::milliseconds::rep total_time = 0;
+        LossFunction train_loss = LossFunction::Euclid();
+        LossFunction test_loss = LossFunction::Euclid();
+        for (size_t epoch = 0; epoch < n_of_epochs; ++epoch) {
+            CommonMetrics givens_metrics = measure(
+                "Givens(784, 32) -> LeakyReLU() -> Givens(32, 10) -> Sigmoid()",
+                "ConstantOptimizer", givens_net, train, train_loss, batch_size,
+                step, epoch);
+            ClassificationReport givens_report = getClassificationReport(
+                givens_metrics, givens_net, train, train_loss, test, test_loss);
+            printReport(givens_report);
+
+            CommonMetrics matrix_metrics = measure(
+                "Matrix(784, 32) -> LeakyReLU() -> Matrix(32, 10) -> Sigmoid()",
+                "ConstantOptimizer", matrix_net, train, train_loss, batch_size,
+                step, epoch);
+            ClassificationReport matrix_report = getClassificationReport(
+                matrix_metrics, matrix_net, train, train_loss, test, test_loss);
+            printReport(matrix_report);
+
+            CommonMetrics householder_metrics = measure(
+                "Householder(784, 32) -> LeakyReLU() -> Householder(32, 10) -> "
+                "Sigmoid()",
+                "ConstantOptimizer", householder_net, train, train_loss,
+                batch_size, step, epoch);
+            ClassificationReport householder_report =
+                getClassificationReport(householder_metrics, householder_net,
+                                        train, train_loss, test, test_loss);
+            printReport(householder_report);
+        }
+    }
 }
 
 void run_all_tests() {
@@ -241,7 +307,8 @@ void run_all_tests() {
     // test_sum();
     // test_sum_multi_layers();
     // test_square();
-    test_mnist();
+    // test_mnist();
+    report_mnist();
 }
 
 }  // namespace neural_network

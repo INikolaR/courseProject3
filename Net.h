@@ -17,6 +17,8 @@ public:
     double loss(const std::vector<TrainUnit>& test_dataset,
                 const LossFunction& loss) const;
     double accuracy(const std::vector<TrainUnit> test_dataset) const;
+    Vector trainOneEpochWithFrobeniusNorms(const std::vector<TrainUnit>& dataset,
+                       const LossFunction& loss, int batch_size, double step);
 
 private:
     void trainOneEpoch(const std::vector<TrainUnit>& dataset,
@@ -24,6 +26,10 @@ private:
     void trainOneBatch(const std::vector<TrainUnit>::const_iterator begin,
                        const std::vector<TrainUnit>::const_iterator end,
                        const LossFunction& loss, double step);
+    void trainOneBatchWithAddingFrobeniusNorms(
+        const std::vector<TrainUnit>::const_iterator begin,
+        const std::vector<TrainUnit>::const_iterator end,
+        const LossFunction& loss, double step, Vector& frobenius_norms);
     std::vector<Vector> trainOneUnit(const Vector& x, const Vector& y,
                                      const LossFunction& loss);
     void addGradients(std::vector<Vector>& a, const std::vector<Vector>& b);

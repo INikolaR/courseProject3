@@ -65,6 +65,20 @@ double Net::accuracy(const std::vector<TrainUnit> dataset) const {
     return correct_answers / static_cast<double>(dataset.size());
 }
 
+Vector Net::trainOneEpochWithFrobeniusNorms(
+    const std::vector<TrainUnit>& dataset, const LossFunction& loss,
+    int batch_size, double step) {
+    assert(batch_size > 0);
+    Vector frobenius_norms(linear_layers_.size(), 0);
+    for (auto it = dataset.begin(); it < dataset.end(); it += batch_size) {
+        auto end_of_batch =
+            (it + batch_size < dataset.end() ? it + batch_size : dataset.end());
+        trainOneBatchWithAddingFrobeniusNorms(it, end_of_batch, loss, step,
+                                              frobenius_norms);
+    }
+    return frobenius_norms;
+}
+
 void Net::trainOneEpoch(const std::vector<TrainUnit>& dataset,
                         const LossFunction& loss, int batch_size, double step) {
     assert(batch_size > 0);
@@ -91,6 +105,28 @@ void Net::trainOneBatch(std::vector<TrainUnit>::const_iterator begin,
     for (; it_layers != linear_layers_.end() && it_g != to_update.rend();
          ++it_layers, ++it_g) {
         (*it_layers)->update(*it_g, step / static_cast<double>(end - begin));
+    }
+}
+
+void Net::trainOneBatchWithAddingFrobeniusNorms(
+    std::vector<TrainUnit>::const_iterator begin,
+    std::vector<TrainUnit>::const_iterator end, const LossFunction& loss,
+    double step, Vector& frobenius_norms) {
+    if (begin == end) {
+        return;
+    }
+    std::vector<Vector> to_update = trainOneUnit(begin->x, begin->y, loss);
+    for (auto it = begin + 1; it != end; ++it) {
+        std::vector<Vector> add_to_update = trainOneUnit(it->x, it->y, loss);
+        addGradients(to_update, add_to_update);
+    }
+    auto it_layers = linear_layers_.begin();
+    auto it_frobenius_norms = frobenius_norms.begin();
+    auto it_g = to_update.rbegin();
+    for (; it_layers != linear_layers_.end() && it_g != to_update.rend();
+         ++it_layers, ++it_g, ++it_frobenius_norms) {
+        (*it_layers)->update(*it_g, step / static_cast<double>(end - begin));
+        *it_frobenius_norms += dot(*it_g, *it_g);
     }
 }
 
