@@ -157,13 +157,15 @@ void HouseholderLayer::update(const Vector& grad, double step) {
         norm = sqrt(norm);
         double norm2 = 0;
         for (auto it = *begin_curr_u_it; it != *(begin_curr_u_it + 1); ++it) {
-            *it /= norm;
+            *it /= norm + 1e-9;
+            assert(*it == *it);
             norm2 += *it * *it;
         }
     }
     for (auto sigma_it = u_.back(); sigma_it != v_.front();
          ++sigma_it, ++grad_it) {
         *sigma_it -= *grad_it * step;
+        assert(*sigma_it == *sigma_it);
         // *sigma_it = 2 * 0.001 * (1 / (1 + exp(-*sigma_it)) - 0.5) + 1;
     }
     for (auto end_curr_v_it = v_.rbegin(); end_curr_v_it != v_.rend() - 1;
@@ -177,7 +179,8 @@ void HouseholderLayer::update(const Vector& grad, double step) {
         norm = sqrt(norm);
         double norm2 = 0;
         for (auto it = *(end_curr_v_it + 1); it != *end_curr_v_it; ++it) {
-            *it /= norm;
+            *it /= norm + 1e-9;
+            assert(*it == *it);
             norm2 += *it * *it;
         }
     }

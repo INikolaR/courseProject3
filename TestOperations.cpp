@@ -49,12 +49,12 @@ std::string stringPerfomance(const CommonMetrics& common_metrics) {
     return ss.str();
 }
 
-void printReport(const ClassificationReport report) {
+void printReport(const ClassificationReport& report) {
     std::cout << "CLASSIFICATION REPORT:\n"
               << stringPerfomance(report.common_metrics)
-              << "train loss: " << report.train_loss
-              << "\ntrain accuracy: " << report.train_accuracy
-              << "\ntest loss: " << report.test_loss
-              << "\ntest accuracy: " << report.test_accuracy << "\n\n";
+              << "train\n       loss: " << report.train_loss
+              << "\n       accuracy: " << report.train_accuracy
+              << "\ntest\n       loss: " << report.test_loss
+              << "\n       accuracy: " << report.test_accuracy << "\n\n";
 }
 }  // namespace neural_network

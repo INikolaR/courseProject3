@@ -15,5 +15,5 @@ ClassificationReport getClassificationReport(
     CommonMetrics common_metrics, const Net& net,
     const std::vector<TrainUnit>& train_dataset, const LossFunction& train_loss,
     const std::vector<TrainUnit>& test_dataset, const LossFunction& test_loss);
-void printReport(const ClassificationReport report);
+void printReport(const ClassificationReport& report);
 }  // namespace neural_network
