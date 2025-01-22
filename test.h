@@ -22,6 +22,7 @@ void test_sum_multi_layers();
 void test_square();
 void test_mnist();
 void report_mnist();
+void report_titanic();
 void run_all_tests();
 
 }  // namespace neural_network
