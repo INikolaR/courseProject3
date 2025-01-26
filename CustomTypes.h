@@ -32,4 +32,22 @@ struct ClassificationReport {
     double test_loss;
     double test_accuracy;
 };
+struct BinaryClassificationReport {
+    CommonMetrics common_metrics;
+    double train_loss;
+    double train_accuracy;
+    double train_precision;
+    double train_recall;
+    double test_loss;
+    double test_accuracy;
+    double test_precision;
+    double test_recall;
+};
+struct RegressionReport {
+    CommonMetrics common_metrics;
+    double train_loss;
+    double train_mse;
+    double test_loss;
+    double test_mse;
+};
 }  // namespace neural_network

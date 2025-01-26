@@ -9,11 +9,11 @@
 #include <iostream>
 #include <string>
 
+#include "DoubleCsvField.h"
 #include "GivensLayer.h"
 #include "HouseholderLayer.h"
 #include "MatrixLayer.h"
 #include "TestOperations.h"
-#include "DoubleCsvField.h"
 
 namespace neural_network {
 
@@ -97,7 +97,9 @@ std::vector<TrainUnit> parseMNISTDataset(
     return dataset;
 }
 
-void parseTitanicDataset(const std::string& filename, std::vector<TrainUnit>& train_dataset, std::vector<TrainUnit>& test_dataset) {
+void parseTitanicDataset(const std::string& filename,
+                         std::vector<TrainUnit>& train_dataset,
+                         std::vector<TrainUnit>& test_dataset) {
     std::ifstream fin(filename, std::ifstream::in);
 
     if (!fin.is_open()) {
@@ -105,9 +107,6 @@ void parseTitanicDataset(const std::string& filename, std::vector<TrainUnit>& tr
         throw std::runtime_error("Cannot open file!");
     }
     std::string s;
-    Vector x;
-    x.reserve(9);
-    Vector y;
     train_dataset.clear();
     train_dataset.reserve(99 * 8);
     test_dataset.clear();
@@ -119,79 +118,88 @@ void parseTitanicDataset(const std::string& filename, std::vector<TrainUnit>& tr
     DoubleCsvField sib_sp;
     DoubleCsvField par_ch;
     DoubleCsvField fare;
-    getline(fin, s, '\n'); // headers
+    getline(fin, s, '\n');  // headers
     for (size_t i = 0; i < 99 * 8; ++i) {
-        getline(fin, s, ','); // passengerId
-        getline(fin, s, ','); // survived
+        getline(fin, s, ',');  // passengerId
+        getline(fin, s, ',');  // survived
         assert(s == "0" || s == "1");
-        getline(fin, s, ','); // PClass
+        getline(fin, s, ',');  // PClass
         assert(s == "1" || s == "2" || s == "3" || s.empty());
         if (!s.empty()) {
             ++n_pclass[s[0] - '1'];
         }
-        getline(fin, s, ','); // first part of name
-        getline(fin, s, ','); // second part of name
-        getline(fin, s, ','); // Sex
+        getline(fin, s, ',');  // first part of name
+        getline(fin, s, ',');  // second part of name
+        getline(fin, s, ',');  // Sex
         assert(s == "male" || s == "female" || s.empty());
         if (!s.empty()) {
             ++n_sex[s == "male"];
         }
-        getline(fin, s, ','); // Age
+        getline(fin, s, ',');  // Age
         age.processString(s);
-        getline(fin, s, ','); // SibSp
+        getline(fin, s, ',');  // SibSp
         sib_sp.processString(s);
-        getline(fin, s, ','); // Parch
+        getline(fin, s, ',');  // Parch
         par_ch.processString(s);
-        getline(fin, s, ','); // Ticket
-        getline(fin, s, ','); // Fare
+        getline(fin, s, ',');  // Ticket
+        getline(fin, s, ',');  // Fare
         fare.processString(s);
-        getline(fin, s, ','); // Cabin
-        getline(fin, s, '\n'); // Embarked
+        getline(fin, s, ',');   // Cabin
+        getline(fin, s, '\n');  // Embarked
         assert(s == "S" || s == "C" || s == "Q" || s.empty());
         if (!s.empty()) {
             ++n_embarked[s == "S" ? 0 : (s == "C" ? 1 : 2)];
         }
     }
-    size_t max_n_pclass = std::max(n_pclass[0], std::max(n_pclass[1], n_pclass[2]));
-    std::string pclass_filler = max_n_pclass == n_pclass[0] ? "1" : 
-                                max_n_pclass == n_pclass[1] ? "2" : "3";
-    std::string sex_filler = std::max(n_sex[0], n_sex[1]) == n_sex[0] ? "male" : "female";
-    size_t max_n_embarked = std::max(std::max(n_embarked[0], n_embarked[1]), n_embarked[2]);
-    std::string embarked_filler = max_n_embarked == n_pclass[0] ? "S" : 
-                                  max_n_embarked == n_pclass[1] ? "C" : "Q";
+    size_t max_n_pclass =
+        std::max(n_pclass[0], std::max(n_pclass[1], n_pclass[2]));
+    std::string pclass_filler = max_n_pclass == n_pclass[0]   ? "1"
+                                : max_n_pclass == n_pclass[1] ? "2"
+                                                              : "3";
+    std::string sex_filler =
+        std::max(n_sex[0], n_sex[1]) == n_sex[0] ? "male" : "female";
+    size_t max_n_embarked =
+        std::max(std::max(n_embarked[0], n_embarked[1]), n_embarked[2]);
+    std::string embarked_filler = max_n_embarked == n_pclass[0]   ? "S"
+                                  : max_n_embarked == n_pclass[1] ? "C"
+                                                                  : "Q";
     fin.seekg(0);
-    getline(fin, s, '\n'); // headers
+    getline(fin, s, '\n');  // headers
     for (size_t i = 0; i < 891; ++i) {
-        getline(fin, s, ','); // passengerId
-        getline(fin, s, ','); // survived
+        Vector x;
+        x.reserve(9);
+
+        getline(fin, s, ',');  // passengerId
+        getline(fin, s, ',');  // survived
         assert(s == "0" || s == "1");
-        y.emplace_back(s[0] - '0');
-        getline(fin, s, ','); // PClass
+        Vector y{0, 0};
+        y[s[0] - '0'] = 1;
+        getline(fin, s, ',');  // PClass
         if (s.empty()) {
             s = pclass_filler;
         }
         assert(s == "1" || s == "2" || s == "3");
         x.emplace_back(s == "1");
         x.emplace_back(s == "2");
-        getline(fin, s, ','); // first part of name
-        getline(fin, s, ','); // second part of name
-        getline(fin, s, ','); // Sex
+        getline(fin, s, ',');  // first part of name
+        getline(fin, s, ',');  // second part of name
+        getline(fin, s, ',');  // Sex
         if (s.empty()) {
             s = sex_filler;
         }
         assert(s == "male" || s == "female");
         x.emplace_back(s == "male");
-        getline(fin, s, ','); // Age
+        getline(fin, s, ',');  // Age
         x.emplace_back(age.evaluate(s));
-        getline(fin, s, ','); // SibSp
+        getline(fin, s, ',');  // SibSp
         x.emplace_back(round(sib_sp.evaluate(s)));
-        getline(fin, s, ','); // Parch
+        getline(fin, s, ',');  // Parch
         x.emplace_back(round(par_ch.evaluate(s)));
-        getline(fin, s, ','); // Ticket
-        getline(fin, s, ','); // Fare
+        getline(fin, s, ',');  // Ticket
+        getline(fin, s, ',');  // Fare
         x.emplace_back(fare.evaluate(s));
-        getline(fin, s, ','); // Cabin
-        getline(fin, s, '\n'); // Embarked
+        getline(fin, s, ',');   // Cabin
+        getline(fin, s, '\n');  // Embarked
         if (s.empty()) {
             s = embarked_filler;
         }
@@ -203,6 +211,66 @@ void parseTitanicDataset(const std::string& filename, std::vector<TrainUnit>& tr
         } else {
             test_dataset.emplace_back(TrainUnit{std::move(x), std::move(y)});
         }
+    }
+}
+
+void parseBostonDataset(const std::string& filename,
+                        std::vector<TrainUnit>& train_dataset,
+                        std::vector<TrainUnit>& test_dataset) {
+    std::ifstream fin(filename, std::ifstream::in);
+
+    if (!fin.is_open()) {
+        fin.close();
+        throw std::runtime_error("Cannot open file!");
+    }
+
+    size_t total_size = 506;
+    size_t train_size = 455;
+    size_t size_in = 13;
+    train_dataset.clear();
+    train_dataset.reserve(train_size);
+    test_dataset.clear();
+    test_dataset.reserve(total_size - train_size);
+    double value;
+    Vector minimum(size_in, std::numeric_limits<double>::max());
+    Vector maximum(size_in, std::numeric_limits<double>::min());
+    for (size_t i = 0; i < train_size; ++i) {
+        for (size_t j = 0; j < 13; ++j) {
+            fin >> value;
+            minimum[j] = std::min(minimum[j], value);
+            maximum[j] = std::max(maximum[j], value);
+        }
+        fin >> value;
+    }
+    for (size_t i = 0; i < train_size; ++i) {
+        Vector x;
+        x.reserve(13);
+        Vector y;
+        for (size_t j = 0; j < 13; ++j) {
+            fin >> value;
+            x.emplace_back(maximum[j] == minimum[j]
+                               ? 0
+                               : (value - minimum[j]) /
+                                     (maximum[j] - minimum[j]));
+        }
+        fin >> value;
+        y.emplace_back(value);
+        train_dataset.emplace_back(TrainUnit{std::move(x), std::move(y)});
+    }
+    for (size_t i = train_size; i < 506; ++i) {
+        Vector x;
+        x.reserve(13);
+        Vector y;
+        for (size_t j = 0; j < 13; ++j) {
+            fin >> value;
+            x.emplace_back(maximum[j] == minimum[j]
+                               ? 0
+                               : (value - minimum[j]) /
+                                     (maximum[j] - minimum[j]));
+        }
+        fin >> value;
+        y.emplace_back(value);
+        test_dataset.emplace_back(TrainUnit{std::move(x), std::move(y)});
     }
 }
 
@@ -447,42 +515,112 @@ void report_titanic() {
         LossFunction test_loss = LossFunction::Euclid();
         for (size_t epoch = 0; epoch < n_of_epochs; ++epoch) {
             CommonMetrics givens_metrics = measure(
-                "Givens(784, 32) -> LeakyReLU() -> Givens(32, 10) -> Sigmoid()",
+                "Givens(9, 30) -> LeakyReLU() -> Givens(30, 2) -> Sigmoid()",
                 "ConstantOptimizer", givens_net, train, train_loss, batch_size,
                 step, epoch);
-            ClassificationReport givens_report = getClassificationReport(
+            BinaryClassificationReport givens_report =
+                getBinaryClassificationReport(givens_metrics, givens_net, train,
+                                              train_loss, test, test_loss);
+            printReport(givens_report);
+
+            CommonMetrics matrix_metrics = measure(
+                "Matrix(9, 30) -> LeakyReLU() -> Matrix(30, 2) -> Sigmoid()",
+                "ConstantOptimizer", matrix_net, train, train_loss, batch_size,
+                step, epoch);
+            BinaryClassificationReport matrix_report =
+                getBinaryClassificationReport(matrix_metrics, matrix_net, train,
+                                              train_loss, test, test_loss);
+            printReport(matrix_report);
+
+            CommonMetrics householder_metrics = measure(
+                "Householder(9, 30) -> LeakyReLU() -> Householder(30, 2) -> "
+                "Sigmoid()",
+                "ConstantOptimizer", householder_net, train, train_loss,
+                batch_size, step, epoch);
+            BinaryClassificationReport householder_report =
+                getBinaryClassificationReport(householder_metrics,
+                                              householder_net, train,
+                                              train_loss, test, test_loss);
+            printReport(householder_report);
+        }
+    }
+}
+
+void report_boston() {
+    std::vector<TrainUnit> train;
+    std::vector<TrainUnit> test;
+    parseBostonDataset("../boston/housing.csv", train, test);
+    // std::vector<int> seeds = {542,  2345, 5674, 5423, 64,
+    //                           2435, 765,  798,  5234, 23};
+    std::vector<int> seeds = {542};
+    for (int seed : seeds) {
+        Random rnd(seed);
+        size_t input_size = 13;
+        size_t hid_size = 900;
+        size_t output_size = 1;
+        Vector w0 = rnd.kaiming(input_size, hid_size);
+        Net givens_net(Linear{GivensLayer(w0, input_size, hid_size)},
+                       ActivationFunction::LeakyReLU());
+        Net matrix_net(Linear{MatrixLayer(w0, input_size, hid_size)},
+                       ActivationFunction::LeakyReLU());
+        Net householder_net(Linear{HouseholderLayer(w0, input_size, hid_size)},
+                            ActivationFunction::LeakyReLU());
+        Vector w1 = rnd.xavier(hid_size, output_size);
+        givens_net.AddLayer(Linear{GivensLayer(w1, hid_size, output_size)},
+                            ActivationFunction::Sigmoid());
+        matrix_net.AddLayer(Linear{MatrixLayer(w1, hid_size, output_size)},
+                            ActivationFunction::Sigmoid());
+        householder_net.AddLayer(
+            Linear{HouseholderLayer(w1, hid_size, output_size)},
+            ActivationFunction::Sigmoid());
+        size_t batch_size = 8;
+        double step = 0.5;
+        size_t n_of_epochs = 5;
+        std::chrono::milliseconds::rep total_time = 0;
+        LossFunction train_loss = LossFunction::Euclid();
+        LossFunction test_loss = LossFunction::Euclid();
+        for (size_t epoch = 0; epoch < n_of_epochs; ++epoch) {
+            CommonMetrics givens_metrics = measure(
+                "Givens(13, 900) -> LeakyReLU() -> Givens(900, 1) -> Sigmoid()",
+                "ConstantOptimizer", givens_net, train, train_loss, batch_size,
+                step, epoch);
+            RegressionReport givens_report = getRegressionReport(
                 givens_metrics, givens_net, train, train_loss, test, test_loss);
             printReport(givens_report);
 
             CommonMetrics matrix_metrics = measure(
-                "Matrix(784, 32) -> LeakyReLU() -> Matrix(32, 10) -> Sigmoid()",
+                "Matrix(13, 900) -> LeakyReLU() -> Matrix(900, 1) -> Sigmoid()",
                 "ConstantOptimizer", matrix_net, train, train_loss, batch_size,
                 step, epoch);
-            ClassificationReport matrix_report = getClassificationReport(
+            RegressionReport matrix_report = getRegressionReport(
                 matrix_metrics, matrix_net, train, train_loss, test, test_loss);
             printReport(matrix_report);
 
             CommonMetrics householder_metrics = measure(
-                "Householder(784, 32) -> LeakyReLU() -> Householder(32, 10) -> "
+                "Householder(13, 900) -> LeakyReLU() -> Householder(900, 1) -> "
                 "Sigmoid()",
                 "ConstantOptimizer", householder_net, train, train_loss,
                 batch_size, step, epoch);
-            ClassificationReport householder_report =
-                getClassificationReport(householder_metrics, householder_net,
-                                        train, train_loss, test, test_loss);
+            RegressionReport householder_report =
+                getRegressionReport(householder_metrics, householder_net, train,
+                                    train_loss, test, test_loss);
             printReport(householder_report);
         }
     }
 }
 
 void run_all_tests() {
-    // test_echo();
-    // test_sum();
-    // test_sum_multi_layers();
-    // test_square();
-    // test_mnist();
+    test_echo();
+    test_sum();
+    test_sum_multi_layers();
+    test_square();
+    test_mnist();
+}
+
+void run_all_reports() {
     // report_mnist();
     report_titanic();
+    // report_boston();
 }
 
 }  // namespace neural_network
