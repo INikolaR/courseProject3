@@ -63,4 +63,14 @@ Vector MatrixLayer::backwardCalcGradient(Vector& u, const Vector& x,
 void MatrixLayer::update(const Vector& grad, double step) {
     updateVector(w_, grad, step);
 }
+
+std::string MatrixLayer::describe() const {
+    std::stringstream ss;
+    ss << "Matrix(" << sizeIn() << "," << sizeOut() << ")";
+    return ss.str();
+}
+
+size_t MatrixLayer::size() const {
+    return w_.size();
+}
 }  // namespace neural_network

@@ -178,4 +178,14 @@ void HouseholderLayer::update(const Vector& grad, double step) {
         }
     }
 }
+
+std::string HouseholderLayer::describe() const {
+    std::stringstream ss;
+    ss << "Householder(" << sizeIn() << "," << sizeOut() << ")";
+    return ss.str();
+}
+
+size_t HouseholderLayer::size() const {
+    return w_.size();
+}
 }  // namespace neural_network

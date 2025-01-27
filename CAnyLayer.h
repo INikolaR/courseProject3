@@ -18,6 +18,8 @@ public:
         std::vector<double>& u, const std::vector<double>& x,
         std::vector<double>& z) const = 0;
     virtual void update(const std::vector<double>& grad, double step) = 0;
+    virtual std::string describe() const = 0;
+    virtual size_t size() const = 0;
 };
 
 template <class TBase, class TObject>
@@ -44,11 +46,21 @@ public:
         return CBase::Object().forwardOnTrain(x);
     }
 
-    std::vector<double> backwardCalcGradient(std::vector<double>& u, const std::vector<double>& x, std::vector<double>& z) const {
+    std::vector<double> backwardCalcGradient(std::vector<double>& u,
+                                             const std::vector<double>& x,
+                                             std::vector<double>& z) const {
         return CBase::Object().backwardCalcGradient(u, x, z);
     }
     void update(const std::vector<double>& grad, double step) {
         CBase::Object().update(grad, step);
+    }
+
+    std::string describe() const {
+        return CBase::Object().describe();
+    }
+
+    size_t size() const {
+        return CBase::Object().size();
     }
 };
 

@@ -12,10 +12,9 @@ void getPrecisionRecallAccuracy(const Net& net,
                                 double& precision, double& recall,
                                 double& accuracy);
 double getMSE(const Net& net, const std::vector<TrainUnit>& dataset);
-CommonMetrics measure(std::string architecture, std::string optimizer, Net& net,
-                      const std::vector<TrainUnit>& train,
-                      const LossFunction& loss, size_t batch_size, double step,
-                      size_t current_epoch);
+CommonMetrics measure(Net& net, const std::vector<TrainUnit>& train,
+                      const LossFunction& loss, size_t batch_size,
+                      Optimizer& optimizer, size_t current_epoch);
 ClassificationReport getClassificationReport(
     CommonMetrics common_metrics, const Net& net,
     const std::vector<TrainUnit>& train_dataset, const LossFunction& train_loss,

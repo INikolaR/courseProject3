@@ -13,6 +13,8 @@ public:
     Vector forwardOnTrain(const Vector& x) const;
     Vector backwardCalcGradient(Vector& u, const Vector& x, Vector& z) const;
     void update(const Vector& grad, double step);
+    std::string describe() const;
+    size_t size() const;
 
 private:
     size_t n_;

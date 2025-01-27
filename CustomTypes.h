@@ -20,7 +20,6 @@ struct CommonMetrics {
     std::string architecture;
     std::string optimizer;
     size_t batch_size;
-    double step;
     size_t current_epoch;
     std::chrono::milliseconds::rep epoch_time_ms;
     Vector frobenius_norms;

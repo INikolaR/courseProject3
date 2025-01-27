@@ -48,21 +48,20 @@ double getMSE(const Net& net, const std::vector<TrainUnit>& dataset) {
     return mse / static_cast<double>(dataset.size());
 }
 
-CommonMetrics measure(std::string architecture, std::string optimizer, Net& net,
-                      const std::vector<TrainUnit>& train,
-                      const LossFunction& loss, size_t batch_size, double step,
-                      size_t current_epoch) {
+CommonMetrics measure(Net& net, const std::vector<TrainUnit>& train,
+                      const LossFunction& loss, size_t batch_size,
+                      Optimizer& optimizer, size_t current_epoch) {
     auto start = std::chrono::system_clock::now();
     Vector norms =
-        net.trainOneEpochWithFrobeniusNorms(train, loss, batch_size, step);
+        net.trainOneEpochWithFrobeniusNorms(train, loss, batch_size, optimizer);
     auto end = std::chrono::system_clock::now();
     auto time =
         std::chrono::duration_cast<std::chrono::milliseconds>(end - start)
             .count();
-    return CommonMetrics{std::move(architecture),  std::move(optimizer),
-                         std::move(batch_size),    std::move(step),
-                         std::move(current_epoch), std::move(time),
-                         std::move(norms)};
+    return CommonMetrics{
+        std::move(net.describe()), std::move(optimizer->describe()),
+        std::move(batch_size),     std::move(current_epoch),
+        std::move(time),           std::move(norms)};
 }
 
 ClassificationReport getClassificationReport(
@@ -117,7 +116,6 @@ std::string stringPerfomance(const CommonMetrics& common_metrics) {
     ss << "ARCH: " << common_metrics.architecture
        << "\nOPTIM: " << common_metrics.optimizer
        << "\nbatch_size: " << common_metrics.batch_size
-       << "\nstep: " << common_metrics.step
        << "\nepoch_number: " << common_metrics.current_epoch
        << "\ntime: " << common_metrics.epoch_time_ms / 1000 << "."
        << common_metrics.epoch_time_ms % 1000 << "s\nnorms: ";

@@ -139,6 +139,16 @@ void GivensLayer::update(const Vector& grad, double step) {
     }
 }
 
+std::string GivensLayer::describe() const {
+    std::stringstream ss;
+    ss << "Givens(" << sizeIn() << "," << sizeOut() << ")";
+    return ss.str();
+}
+
+size_t GivensLayer::size() const {
+    return alpha_.size() + sigma_.size() + beta_.size();
+}
+
 GivensLayer::GivensLayer(const SVD& svd, size_t in, size_t out)
     : n_(in + 1),
       m_(out),

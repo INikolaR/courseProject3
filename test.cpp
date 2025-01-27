@@ -9,10 +9,13 @@
 #include <iostream>
 #include <string>
 
+#include "Adam.h"
+#include "Constant.h"
 #include "DoubleCsvField.h"
 #include "GivensLayer.h"
 #include "HouseholderLayer.h"
 #include "MatrixLayer.h"
+#include "Momentum.h"
 #include "TestOperations.h"
 
 namespace neural_network {
@@ -279,10 +282,10 @@ void simple_test_loss(const std::string& test_name, Net& net,
                       const LossFunction& train_loss,
                       const std::vector<TrainUnit>& test_dataset,
                       const LossFunction& test_loss, size_t n_of_epochs,
-                      int batch_size, double step) {
+                      int batch_size, Optimizer& optimizer) {
     std::cout << "TEST " << test_name << ":\n";
     auto start = std::chrono::system_clock::now();
-    net.fit(train_dataset, train_loss, n_of_epochs, batch_size, step);
+    net.fit(train_dataset, train_loss, n_of_epochs, batch_size, optimizer);
     auto end = std::chrono::system_clock::now();
     auto time =
         std::chrono::duration_cast<std::chrono::milliseconds>(end - start)
@@ -290,8 +293,8 @@ void simple_test_loss(const std::string& test_name, Net& net,
     std::cout << "    time: " << time / 1000 << "." << time % 1000
               << " s\n    loss: " << net.loss(test_dataset, test_loss)
               << "\n    epochs: " << n_of_epochs
-              << "\n    batch size: " << batch_size << "\n    step: " << step
-              << "\n";
+              << "\n    batch size: " << batch_size
+              << "\n    optimizer: " << optimizer->describe() << "\n";
 }
 
 double simple_test_loss_accuracy(const std::string& test_name, Net& net,
@@ -300,10 +303,10 @@ double simple_test_loss_accuracy(const std::string& test_name, Net& net,
                                  const std::vector<TrainUnit>& test_dataset,
                                  const LossFunction& test_loss,
                                  size_t n_of_epochs, int batch_size,
-                                 double step) {
+                                 Optimizer& optimizer) {
     std::cout << "TEST " << test_name << ":\n";
     auto start = std::chrono::system_clock::now();
-    net.fit(train_dataset, train_loss, n_of_epochs, batch_size, step);
+    net.fit(train_dataset, train_loss, n_of_epochs, batch_size, optimizer);
     auto end = std::chrono::system_clock::now();
     double loss = net.loss(test_dataset, test_loss);
     auto time =
@@ -315,8 +318,8 @@ double simple_test_loss_accuracy(const std::string& test_name, Net& net,
               << "\n    test loss: " << loss
               << "\n    test accuracy: " << net.accuracy(test_dataset)
               << "\n    epochs: " << n_of_epochs
-              << "\n    batch size: " << batch_size << "\n    step: " << step
-              << "\n";
+              << "\n    batch size: " << batch_size
+              << "\n    optimizer: " << optimizer->describe() << "\n";
     return loss;
 }
 
@@ -326,8 +329,9 @@ void test_echo() {
                                    {{7}, {7}}, {{8}, {8}}};
     Net net(Linear{GivensLayer({0.5, 0.5}, 1, 1)},
             ActivationFunction::LeakyReLU());
+    Optimizer optimizer = Constant(net.linearLayers(), 0.02);
     simple_test_loss("ECHO", net, dataset, LossFunction::Euclid(), dataset,
-                     LossFunction::Euclid(), 100, 8, 0.02);
+                     LossFunction::Euclid(), 100, 8, optimizer);
 }
 
 void test_sum() {
@@ -339,8 +343,9 @@ void test_sum() {
     Random rnd;
     Net net(Linear{GivensLayer(rnd.kaiming(2, 1), 2, 1)},
             ActivationFunction::LeakyReLU());
+    Optimizer optimizer = Constant(net.linearLayers(), 0.07);
     simple_test_loss("SUM", net, dataset, LossFunction::Euclid(), dataset,
-                     LossFunction::Euclid(), 100, 16, 0.07);
+                     LossFunction::Euclid(), 100, 16, optimizer);
 }
 
 void test_sum_multi_layers() {
@@ -354,8 +359,9 @@ void test_sum_multi_layers() {
             ActivationFunction::LeakyReLU());
     net.AddLayer(Linear{GivensLayer(rnd.kaiming(3, 1), 3, 1)},
                  ActivationFunction::LeakyReLU());
+    Optimizer optimizer = Constant(net.linearLayers(), 0.015);
     simple_test_loss("SUM MULTI LAYERS", net, dataset, LossFunction::Euclid(),
-                     dataset, LossFunction::Euclid(), 100, 1, 0.015);
+                     dataset, LossFunction::Euclid(), 100, 1, optimizer);
 }
 
 void test_square() {
@@ -369,8 +375,9 @@ void test_square() {
             ActivationFunction::LeakyReLU());
     net.AddLayer(Linear{GivensLayer(rnd.kaiming(5, 1), 5, 1)},
                  ActivationFunction::Id());
+    Optimizer optimizer = Constant(net.linearLayers(), 0.001);
     simple_test_loss("SQUARE", net, train, LossFunction::Euclid(), train,
-                     LossFunction::Euclid(), 1000, 10, 0.001);
+                     LossFunction::Euclid(), 1000, 10, optimizer);
 }
 
 void test_mnist() {
@@ -403,15 +410,19 @@ void test_mnist() {
             Linear{HouseholderLayer(w1, hid_size, output_size)},
             ActivationFunction::Sigmoid());
         double step = 0.01;
+        Optimizer givens_opt = Constant(givens_net.linearLayers(), step);
+        Optimizer matrix_opt = Constant(matrix_net.linearLayers(), step);
+        Optimizer householder_opt =
+            Constant(householder_net.linearLayers(), step);
         double curr_loss = simple_test_loss_accuracy(
             "MNIST GIVENS", givens_net, train, LossFunction::Euclid(), test,
-            LossFunction::Euclid(), 1, 10, step);
+            LossFunction::Euclid(), 1, 10, givens_opt);
         double curr_loss_2 = simple_test_loss_accuracy(
             "MNIST MATRIX", matrix_net, train, LossFunction::Euclid(), test,
-            LossFunction::Euclid(), 1, 10, step);
+            LossFunction::Euclid(), 1, 10, matrix_opt);
         double curr_loss_3 = simple_test_loss_accuracy(
             "MNIST HOUSEHOLDER", householder_net, train, LossFunction::Euclid(),
-            test, LossFunction::Euclid(), 1, 10, step);
+            test, LossFunction::Euclid(), 1, 10, householder_opt);
     }
 }
 
@@ -422,60 +433,91 @@ void report_mnist() {
     std::vector<TrainUnit> test =
         parseMNISTDataset("../t10k-images-idx3-ubyte/t10k-images.idx3-ubyte",
                           "../t10k-labels-idx1-ubyte/t10k-labels.idx1-ubyte");
-    std::vector<int> seeds = {542,  2345, 5674, 5423, 64,
-                              2435, 765,  798,  5234, 23};
-    for (int seed : seeds) {
-        Random rnd(seed);
-        size_t input_size = 784;
-        size_t hid_size = 32;
-        size_t output_size = 10;
-        Vector w0 = rnd.kaiming(input_size, hid_size);
-        Net givens_net(Linear{GivensLayer(w0, input_size, hid_size)},
-                       ActivationFunction::LeakyReLU());
-        Net matrix_net(Linear{MatrixLayer(w0, input_size, hid_size)},
-                       ActivationFunction::LeakyReLU());
-        Net householder_net(Linear{HouseholderLayer(w0, input_size, hid_size)},
-                            ActivationFunction::LeakyReLU());
-        Vector w1 = rnd.xavier(hid_size, output_size);
-        givens_net.AddLayer(Linear{GivensLayer(w1, hid_size, output_size)},
-                            ActivationFunction::Sigmoid());
-        matrix_net.AddLayer(Linear{MatrixLayer(w1, hid_size, output_size)},
-                            ActivationFunction::Sigmoid());
-        householder_net.AddLayer(
-            Linear{HouseholderLayer(w1, hid_size, output_size)},
-            ActivationFunction::Sigmoid());
-        size_t batch_size = 8;
-        double step = 0.01;
-        size_t n_of_epochs = 1;
-        std::chrono::milliseconds::rep total_time = 0;
-        LossFunction train_loss = LossFunction::Euclid();
-        LossFunction test_loss = LossFunction::Euclid();
-        for (size_t epoch = 0; epoch < n_of_epochs; ++epoch) {
-            CommonMetrics givens_metrics = measure(
-                "Givens(784, 32) -> LeakyReLU() -> Givens(32, 10) -> Sigmoid()",
-                "ConstantOptimizer", givens_net, train, train_loss, batch_size,
-                step, epoch);
-            ClassificationReport givens_report = getClassificationReport(
-                givens_metrics, givens_net, train, train_loss, test, test_loss);
-            printReport(givens_report);
+    std::vector<int> seeds = {542, 2345, 5674};
+    std::vector<LossFunction> losses = {LossFunction::Euclid()};
+    std::vector<Vector> architectures = {
+        {784, 32, 10}, {784, 10, 10}, {784, 2, 10}};
+    size_t batch_size = 8;
+    double step = 0.01;
+    size_t n_of_epochs = 5;
+    for (Vector architecture : architectures) {
+        for (LossFunction loss : losses) {
+            for (size_t optim = 0; optim < 2; ++optim) {
+                for (int seed : seeds) {
+                    std::cout << "=====EXPERIMENT=====\n";
+                    Random rnd(seed);
+                    size_t input_size = architecture[0];
+                    size_t hid_size = architecture[1];
+                    size_t output_size = architecture[2];
+                    Vector w0 = rnd.kaiming(input_size, hid_size);
+                    Net givens_net(
+                        Linear{GivensLayer(w0, input_size, hid_size)},
+                        ActivationFunction::LeakyReLU());
+                    Net matrix_net(
+                        Linear{MatrixLayer(w0, input_size, hid_size)},
+                        ActivationFunction::LeakyReLU());
+                    Net householder_net(
+                        Linear{HouseholderLayer(w0, input_size, hid_size)},
+                        ActivationFunction::LeakyReLU());
+                    Vector w1 = rnd.xavier(hid_size, output_size);
+                    givens_net.AddLayer(
+                        Linear{GivensLayer(w1, hid_size, output_size)},
+                        ActivationFunction::Sigmoid());
+                    matrix_net.AddLayer(
+                        Linear{MatrixLayer(w1, hid_size, output_size)},
+                        ActivationFunction::Sigmoid());
+                    householder_net.AddLayer(
+                        Linear{HouseholderLayer(w1, hid_size, output_size)},
+                        ActivationFunction::Sigmoid());
+                    Optimizer givens_opt;
+                    Optimizer matrix_opt;
+                    Optimizer householder_opt;
+                    if (optim == 0) {
+                        givens_opt = Constant(givens_net.linearLayers(), step);
+                        matrix_opt = Constant(matrix_net.linearLayers(), step);
+                        householder_opt =
+                            Constant(householder_net.linearLayers(), step);
+                    } else if (optim == 1) {
+                        givens_opt =
+                            Momentum(givens_net.linearLayers(), step, 0.5);
+                        matrix_opt =
+                            Momentum(matrix_net.linearLayers(), step, 0.5);
+                        householder_opt =
+                            Momentum(householder_net.linearLayers(), step, 0.5);
+                    } else {
+                        givens_opt = Adam(givens_net.linearLayers(), step);
+                        matrix_opt = Adam(matrix_net.linearLayers(), step);
+                        householder_opt =
+                            Adam(householder_net.linearLayers(), step);
+                    }
+                    for (size_t epoch = 1; epoch <= n_of_epochs; ++epoch) {
+                        CommonMetrics givens_metrics =
+                            measure(givens_net, train, loss, batch_size,
+                                    givens_opt, epoch);
+                        ClassificationReport givens_report =
+                            getClassificationReport(givens_metrics, givens_net,
+                                                    train, loss, test, loss);
+                        printReport(givens_report);
 
-            CommonMetrics matrix_metrics = measure(
-                "Matrix(784, 32) -> LeakyReLU() -> Matrix(32, 10) -> Sigmoid()",
-                "ConstantOptimizer", matrix_net, train, train_loss, batch_size,
-                step, epoch);
-            ClassificationReport matrix_report = getClassificationReport(
-                matrix_metrics, matrix_net, train, train_loss, test, test_loss);
-            printReport(matrix_report);
+                        CommonMetrics matrix_metrics =
+                            measure(matrix_net, train, loss, batch_size,
+                                    matrix_opt, epoch);
+                        ClassificationReport matrix_report =
+                            getClassificationReport(matrix_metrics, matrix_net,
+                                                    train, loss, test, loss);
+                        printReport(matrix_report);
 
-            CommonMetrics householder_metrics = measure(
-                "Householder(784, 32) -> LeakyReLU() -> Householder(32, 10) -> "
-                "Sigmoid()",
-                "ConstantOptimizer", householder_net, train, train_loss,
-                batch_size, step, epoch);
-            ClassificationReport householder_report =
-                getClassificationReport(householder_metrics, householder_net,
-                                        train, train_loss, test, test_loss);
-            printReport(householder_report);
+                        CommonMetrics householder_metrics =
+                            measure(householder_net, train, loss, batch_size,
+                                    householder_opt, epoch);
+                        ClassificationReport householder_report =
+                            getClassificationReport(householder_metrics,
+                                                    householder_net, train,
+                                                    loss, test, loss);
+                        printReport(householder_report);
+                    }
+                }
+            }
         }
     }
 }
@@ -484,64 +526,92 @@ void report_titanic() {
     std::vector<TrainUnit> train;
     std::vector<TrainUnit> test;
     parseTitanicDataset("../titanic/Titanic-Dataset.csv", train, test);
-    // std::vector<int> seeds = {542,  2345, 5674, 5423, 64,
-    //                           2435, 765,  798,  5234, 23};
-    std::vector<int> seeds = {542};
-    for (int seed : seeds) {
-        Random rnd(seed);
-        size_t input_size = 9;
-        size_t hid_size = 30;
-        size_t output_size = 2;
-        Vector w0 = rnd.kaiming(input_size, hid_size);
-        Net givens_net(Linear{GivensLayer(w0, input_size, hid_size)},
-                       ActivationFunction::LeakyReLU());
-        Net matrix_net(Linear{MatrixLayer(w0, input_size, hid_size)},
-                       ActivationFunction::LeakyReLU());
-        Net householder_net(Linear{HouseholderLayer(w0, input_size, hid_size)},
-                            ActivationFunction::LeakyReLU());
-        Vector w1 = rnd.xavier(hid_size, output_size);
-        givens_net.AddLayer(Linear{GivensLayer(w1, hid_size, output_size)},
-                            ActivationFunction::Sigmoid());
-        matrix_net.AddLayer(Linear{MatrixLayer(w1, hid_size, output_size)},
-                            ActivationFunction::Sigmoid());
-        householder_net.AddLayer(
-            Linear{HouseholderLayer(w1, hid_size, output_size)},
-            ActivationFunction::Sigmoid());
-        size_t batch_size = 8;
-        double step = 0.0001;
-        size_t n_of_epochs = 10;
-        std::chrono::milliseconds::rep total_time = 0;
-        LossFunction train_loss = LossFunction::Euclid();
-        LossFunction test_loss = LossFunction::Euclid();
-        for (size_t epoch = 0; epoch < n_of_epochs; ++epoch) {
-            CommonMetrics givens_metrics = measure(
-                "Givens(9, 30) -> LeakyReLU() -> Givens(30, 2) -> Sigmoid()",
-                "ConstantOptimizer", givens_net, train, train_loss, batch_size,
-                step, epoch);
-            BinaryClassificationReport givens_report =
-                getBinaryClassificationReport(givens_metrics, givens_net, train,
-                                              train_loss, test, test_loss);
-            printReport(givens_report);
+    std::vector<int> seeds = {542, 2345, 5674};
+    std::vector<LossFunction> losses = {LossFunction::Euclid()};
+    std::vector<Vector> architectures = {{9, 30, 2}, {9, 1000, 2}, {9, 10, 2}};
+    size_t batch_size = 8;
+    double step = 0.0001;
+    size_t n_of_epochs = 5;
+    for (Vector architecture : architectures) {
+        for (LossFunction loss : losses) {
+            for (size_t optim = 0; optim < 2; ++optim) {
+                for (int seed : seeds) {
+                    std::cout << "=====EXPERIMENT=====\n";
+                    Random rnd(seed);
+                    size_t input_size = architecture[0];
+                    size_t hid_size = architecture[1];
+                    size_t output_size = architecture[2];
+                    Vector w0 = rnd.kaiming(input_size, hid_size);
+                    Net givens_net(
+                        Linear{GivensLayer(w0, input_size, hid_size)},
+                        ActivationFunction::LeakyReLU());
+                    Net matrix_net(
+                        Linear{MatrixLayer(w0, input_size, hid_size)},
+                        ActivationFunction::LeakyReLU());
+                    Net householder_net(
+                        Linear{HouseholderLayer(w0, input_size, hid_size)},
+                        ActivationFunction::LeakyReLU());
+                    Vector w1 = rnd.xavier(hid_size, output_size);
+                    givens_net.AddLayer(
+                        Linear{GivensLayer(w1, hid_size, output_size)},
+                        ActivationFunction::Sigmoid());
+                    matrix_net.AddLayer(
+                        Linear{MatrixLayer(w1, hid_size, output_size)},
+                        ActivationFunction::Sigmoid());
+                    householder_net.AddLayer(
+                        Linear{HouseholderLayer(w1, hid_size, output_size)},
+                        ActivationFunction::Sigmoid());
+                    Optimizer givens_opt;
+                    Optimizer matrix_opt;
+                    Optimizer householder_opt;
+                    if (optim == 0) {
+                        givens_opt = Constant(givens_net.linearLayers(), step);
+                        matrix_opt = Constant(matrix_net.linearLayers(), step);
+                        householder_opt =
+                            Constant(householder_net.linearLayers(), step);
+                    } else if (optim == 1) {
+                        givens_opt =
+                            Momentum(givens_net.linearLayers(), step, 0.5);
+                        matrix_opt =
+                            Momentum(matrix_net.linearLayers(), step, 0.5);
+                        householder_opt =
+                            Momentum(householder_net.linearLayers(), step, 0.5);
+                    } else {
+                        givens_opt = Adam(givens_net.linearLayers(), step);
+                        matrix_opt = Adam(matrix_net.linearLayers(), step);
+                        householder_opt =
+                            Adam(householder_net.linearLayers(), step);
+                    }
+                    for (size_t epoch = 1; epoch <= n_of_epochs; ++epoch) {
+                        CommonMetrics givens_metrics =
+                            measure(givens_net, train, loss, batch_size,
+                                    givens_opt, epoch);
+                        BinaryClassificationReport givens_report =
+                            getBinaryClassificationReport(givens_metrics,
+                                                          givens_net, train,
+                                                          loss, test, loss);
+                        printReport(givens_report);
 
-            CommonMetrics matrix_metrics = measure(
-                "Matrix(9, 30) -> LeakyReLU() -> Matrix(30, 2) -> Sigmoid()",
-                "ConstantOptimizer", matrix_net, train, train_loss, batch_size,
-                step, epoch);
-            BinaryClassificationReport matrix_report =
-                getBinaryClassificationReport(matrix_metrics, matrix_net, train,
-                                              train_loss, test, test_loss);
-            printReport(matrix_report);
+                        CommonMetrics matrix_metrics =
+                            measure(matrix_net, train, loss, batch_size,
+                                    matrix_opt, epoch);
+                        BinaryClassificationReport matrix_report =
+                            getBinaryClassificationReport(matrix_metrics,
+                                                          matrix_net, train,
+                                                          loss, test, loss);
+                        printReport(matrix_report);
 
-            CommonMetrics householder_metrics = measure(
-                "Householder(9, 30) -> LeakyReLU() -> Householder(30, 2) -> "
-                "Sigmoid()",
-                "ConstantOptimizer", householder_net, train, train_loss,
-                batch_size, step, epoch);
-            BinaryClassificationReport householder_report =
-                getBinaryClassificationReport(householder_metrics,
-                                              householder_net, train,
-                                              train_loss, test, test_loss);
-            printReport(householder_report);
+                        CommonMetrics householder_metrics =
+                            measure(householder_net, train, loss, batch_size,
+                                    householder_opt, epoch);
+                        BinaryClassificationReport householder_report =
+                            getBinaryClassificationReport(
+                                householder_metrics, householder_net, train,
+                                loss, test, loss);
+                        printReport(householder_report);
+                    }
+                }
+            }
         }
     }
 }
@@ -550,61 +620,91 @@ void report_boston() {
     std::vector<TrainUnit> train;
     std::vector<TrainUnit> test;
     parseBostonDataset("../boston/housing.csv", train, test);
-    // std::vector<int> seeds = {542,  2345, 5674, 5423, 64,
-    //                           2435, 765,  798,  5234, 23};
-    std::vector<int> seeds = {542};
-    for (int seed : seeds) {
-        Random rnd(seed);
-        size_t input_size = 13;
-        size_t hid_size = 900;
-        size_t output_size = 1;
-        Vector w0 = rnd.kaiming(input_size, hid_size);
-        Net givens_net(Linear{GivensLayer(w0, input_size, hid_size)},
-                       ActivationFunction::LeakyReLU());
-        Net matrix_net(Linear{MatrixLayer(w0, input_size, hid_size)},
-                       ActivationFunction::LeakyReLU());
-        Net householder_net(Linear{HouseholderLayer(w0, input_size, hid_size)},
-                            ActivationFunction::LeakyReLU());
-        Vector w1 = rnd.xavier(hid_size, output_size);
-        givens_net.AddLayer(Linear{GivensLayer(w1, hid_size, output_size)},
-                            ActivationFunction::Sigmoid());
-        matrix_net.AddLayer(Linear{MatrixLayer(w1, hid_size, output_size)},
-                            ActivationFunction::Sigmoid());
-        householder_net.AddLayer(
-            Linear{HouseholderLayer(w1, hid_size, output_size)},
-            ActivationFunction::Sigmoid());
-        size_t batch_size = 8;
-        double step = 0.5;
-        size_t n_of_epochs = 5;
-        std::chrono::milliseconds::rep total_time = 0;
-        LossFunction train_loss = LossFunction::Euclid();
-        LossFunction test_loss = LossFunction::Euclid();
-        for (size_t epoch = 0; epoch < n_of_epochs; ++epoch) {
-            CommonMetrics givens_metrics = measure(
-                "Givens(13, 900) -> LeakyReLU() -> Givens(900, 1) -> Sigmoid()",
-                "ConstantOptimizer", givens_net, train, train_loss, batch_size,
-                step, epoch);
-            RegressionReport givens_report = getRegressionReport(
-                givens_metrics, givens_net, train, train_loss, test, test_loss);
-            printReport(givens_report);
+    std::vector<int> seeds = {542, 2345, 5674};
+    std::vector<LossFunction> losses = {LossFunction::Euclid()};
+    std::vector<Vector> architectures = {
+        {13, 100, 1}, {13, 1000, 1}, {13, 10, 1}};
+    size_t batch_size = 8;
+    double step = 0.5;
+    size_t n_of_epochs = 5;
+    for (Vector architecture : architectures) {
+        for (LossFunction loss : losses) {
+            for (size_t optim = 0; optim < 2; ++optim) {
+                for (int seed : seeds) {
+                    std::cout << "=====EXPERIMENT=====\n";
+                    Random rnd(seed);
+                    size_t input_size = architecture[0];
+                    size_t hid_size = architecture[1];
+                    size_t output_size = architecture[2];
+                    Vector w0 = rnd.kaiming(input_size, hid_size);
+                    Net givens_net(
+                        Linear{GivensLayer(w0, input_size, hid_size)},
+                        ActivationFunction::LeakyReLU());
+                    Net matrix_net(
+                        Linear{MatrixLayer(w0, input_size, hid_size)},
+                        ActivationFunction::LeakyReLU());
+                    Net householder_net(
+                        Linear{HouseholderLayer(w0, input_size, hid_size)},
+                        ActivationFunction::LeakyReLU());
+                    Vector w1 = rnd.xavier(hid_size, output_size);
+                    givens_net.AddLayer(
+                        Linear{GivensLayer(w1, hid_size, output_size)},
+                        ActivationFunction::Sigmoid());
+                    matrix_net.AddLayer(
+                        Linear{MatrixLayer(w1, hid_size, output_size)},
+                        ActivationFunction::Sigmoid());
+                    householder_net.AddLayer(
+                        Linear{HouseholderLayer(w1, hid_size, output_size)},
+                        ActivationFunction::Sigmoid());
+                    Optimizer givens_opt;
+                    Optimizer matrix_opt;
+                    Optimizer householder_opt;
+                    if (optim == 0) {
+                        givens_opt = Constant(givens_net.linearLayers(), step);
+                        matrix_opt = Constant(matrix_net.linearLayers(), step);
+                        householder_opt =
+                            Constant(householder_net.linearLayers(), step);
+                    } else if (optim == 1) {
+                        givens_opt =
+                            Momentum(givens_net.linearLayers(), step, 0.5);
+                        matrix_opt =
+                            Momentum(matrix_net.linearLayers(), step, 0.5);
+                        householder_opt =
+                            Momentum(householder_net.linearLayers(), step, 0.5);
+                    } else {
+                        givens_opt = Adam(givens_net.linearLayers(), step);
+                        matrix_opt = Adam(matrix_net.linearLayers(), step);
+                        householder_opt =
+                            Adam(householder_net.linearLayers(), step);
+                    }
+                    for (size_t epoch = 1; epoch <= n_of_epochs; ++epoch) {
+                        CommonMetrics givens_metrics =
+                            measure(givens_net, train, loss, batch_size,
+                                    givens_opt, epoch);
+                        RegressionReport givens_report =
+                            getRegressionReport(givens_metrics, givens_net,
+                                                train, loss, test, loss);
+                        printReport(givens_report);
 
-            CommonMetrics matrix_metrics = measure(
-                "Matrix(13, 900) -> LeakyReLU() -> Matrix(900, 1) -> Sigmoid()",
-                "ConstantOptimizer", matrix_net, train, train_loss, batch_size,
-                step, epoch);
-            RegressionReport matrix_report = getRegressionReport(
-                matrix_metrics, matrix_net, train, train_loss, test, test_loss);
-            printReport(matrix_report);
+                        CommonMetrics matrix_metrics =
+                            measure(matrix_net, train, loss, batch_size,
+                                    matrix_opt, epoch);
+                        RegressionReport matrix_report =
+                            getRegressionReport(matrix_metrics, matrix_net,
+                                                train, loss, test, loss);
+                        printReport(matrix_report);
 
-            CommonMetrics householder_metrics = measure(
-                "Householder(13, 900) -> LeakyReLU() -> Householder(900, 1) -> "
-                "Sigmoid()",
-                "ConstantOptimizer", householder_net, train, train_loss,
-                batch_size, step, epoch);
-            RegressionReport householder_report =
-                getRegressionReport(householder_metrics, householder_net, train,
-                                    train_loss, test, test_loss);
-            printReport(householder_report);
+                        CommonMetrics householder_metrics =
+                            measure(householder_net, train, loss, batch_size,
+                                    householder_opt, epoch);
+                        RegressionReport householder_report =
+                            getRegressionReport(householder_metrics,
+                                                householder_net, train, loss,
+                                                test, loss);
+                        printReport(householder_report);
+                    }
+                }
+            }
         }
     }
 }
@@ -618,9 +718,9 @@ void run_all_tests() {
 }
 
 void run_all_reports() {
-    // report_mnist();
+    report_mnist();
     report_titanic();
-    // report_boston();
+    report_boston();
 }
 
 }  // namespace neural_network

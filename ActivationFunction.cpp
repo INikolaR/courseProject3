@@ -8,7 +8,7 @@ namespace neural_network {
 
 ActivationFunction ActivationFunction::ReLU() {
     return ActivationFunction([](double x) { return (x > 0) * x; },
-                              [](double x) { return (x > 0); });
+                              [](double x) { return (x > 0); }, "ReLU()");
 }
 
 ActivationFunction ActivationFunction::LeakyReLU() {
@@ -19,7 +19,8 @@ ActivationFunction ActivationFunction::LeakyReLU() {
         },
         [](double x) {
             return (x > 0) * (1 - LeakyReLUCoefficient) + LeakyReLUCoefficient;
-        });
+        },
+        "LeakyReLU()");
 }
 
 ActivationFunction ActivationFunction::Sigmoid() {
@@ -27,17 +28,28 @@ ActivationFunction ActivationFunction::Sigmoid() {
                               [](double x) {
                                   double s = 1 / (1 + exp(-x));
                                   return s * (1 - s);
-                              });
+                              },
+                              "Sigmoid()");
 }
 
 ActivationFunction ActivationFunction::Id() {
     return ActivationFunction([](double x) { return x; },
-                              [](double x) { return 1; });
+                              [](double x) { return 1; }, "Id()");
 }
 
 ActivationFunction::ActivationFunction(std::function<double(double)>&& f0,
                                        std::function<double(double)>&& f1)
-    : f0_(std::move(f0)), f1_(std::move(f1)) {
+    : f0_(std::move(f0)),
+      f1_(std::move(f1)),
+      description_(std::move("CustomFunction")) {
+}
+
+ActivationFunction::ActivationFunction(std::function<double(double)>&& f0,
+                                       std::function<double(double)>&& f1,
+                                       std::string description)
+    : f0_(std::move(f0)),
+      f1_(std::move(f1)),
+      description_(std::move(description)) {
 }
 
 double ActivationFunction::evaluate0(double value) const {
@@ -68,6 +80,10 @@ Vector ActivationFunction::evaluate1(const Vector& x) const {
         x_result.emplace_back(f1_(element));
     }
     return x_result;
+}
+
+std::string ActivationFunction::describe() const {
+    return description_;
 }
 
 }  // namespace neural_network
