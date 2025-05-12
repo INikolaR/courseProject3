@@ -8,11 +8,9 @@ class Random {
 public:
     Random();
     Random(int seed);
-    void givensAngles(Vector::iterator begin, Vector::iterator end);
-    void singularValues(Vector::iterator begin, Vector::iterator end);
-    Vector normal(size_t in, size_t out);
-    Vector kaiming(size_t in, size_t out);
-    Vector xavier(size_t in, size_t out);
+    std::vector<double> normal(In in, Out out);
+    std::vector<double> kaiming(In in, Out out);
+    std::vector<double> xavier(In in, Out out);
 
 private:
     static constexpr int Seed = 1234567;

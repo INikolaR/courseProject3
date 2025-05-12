@@ -1,67 +1,57 @@
 #include "MatrixLayer.h"
 
 #include <cassert>
+#include <iostream>
 
 #include "VectorOperations.h"
 
 namespace neural_network {
-MatrixLayer::MatrixLayer(const Vector& w, size_t in, size_t out)
-    : w_(w), n_(in + 1), m_(out) {
+MatrixLayer::MatrixLayer(In in, Out out, const std::vector<double>& w)
+    : n_(in + 1), m_(out) {
+    w_ = Matrix(out, in + 1);
+    for (Index i = 0; i < out; ++i) {
+        for (Index j = 0; j < in + 1; ++j) {
+            w_(i, j) = w[i * (in + 1) + j];
+        }
+    }
 }
 
-MatrixLayer::MatrixLayer(Random& rnd, size_t in, size_t out)
-    : MatrixLayer(rnd.xavier(in, out), in, out) {
+MatrixLayer::MatrixLayer(In in, Out out, Random& rnd)
+    : MatrixLayer(in, out, rnd.xavier(in, out)) {
 }
 
-size_t MatrixLayer::sizeIn() const {
+Index MatrixLayer::sizeIn() const {
     return n_ - 1;
 }
 
-size_t MatrixLayer::sizeOut() const {
+Index MatrixLayer::sizeOut() const {
     return m_;
 }
 
-Vector MatrixLayer::forward(const Vector& x) const {
-    assert(x.size() == n_ - 1 &&
-           "size of x should be the same as input size of layer");
-    assert(!x.empty() && "x should be not empty");
-    Vector res;
-    res.reserve(m_);
-    size_t counter = 0;
-    for (size_t row = 0; row < m_; ++row) {
-        double e = 0;
-        for (size_t col = 0; col < n_ - 1; ++col) {
-            e += x[col] * w_[counter++];
-        }
-        e += w_[counter++];
-        res.emplace_back(e);
-    }
-    return res;
+Matrix MatrixLayer::forward(const Matrix& x) const {
+    assert(x.rows() == n_ - 1 &&
+           "x.rows() should be the same as input size of layer");
+    return w_.block(0, 0, w_.rows(), w_.cols() - 1) * x + w_.col(w_.cols() - 1);
 }
 
-// this is needed for supporting a single interface
-Vector MatrixLayer::forwardOnTrain(const Vector& x) const {
+Matrix MatrixLayer::forwardOnTrain(const Matrix& x) const {
     return forward(x);
 }
 
-Vector MatrixLayer::backwardCalcGradient(Vector& u, const Vector& x,
-                                         Vector& z) const {
-    assert(u.size() == m_ && "u size should be equal to output size of layer");
-    assert(x.size() == n_ - 1 &&
+Matrix MatrixLayer::backwardCalcGradient(Matrix& u, const Matrix& x,
+                                         Matrix& z) const {
+    assert(u.rows() == m_ && "u size should be equal to output size of layer");
+    assert(x.rows() == n_ - 1 &&
            "x size should be equal to input size of layer");
-    Vector grad;
-    grad.reserve(n_ * m_);
-    for (size_t i = 0; i < m_; ++i) {
-        for (size_t j = 0; j < n_ - 1; ++j) {
-            grad.emplace_back(u[i] * x[j]);
-        }
-        grad.emplace_back(u[i]);
-    }
+    Matrix grad = Matrix::Zero(m_, n_);
+    grad.block(0, 0, m_, n_ - 1) = u.transpose() * x.transpose();
+    grad.block(0, n_ - 1, m_, 1) = u.transpose();
+    u *= w_;
     return grad;
 }
 
-void MatrixLayer::update(const Vector& grad, double step) {
-    updateVector(w_, grad, step);
+void MatrixLayer::update(const Matrix& grad, double step) {
+    w_ -= grad * step;
 }
 
 std::string MatrixLayer::describe() const {
@@ -70,7 +60,7 @@ std::string MatrixLayer::describe() const {
     return ss.str();
 }
 
-size_t MatrixLayer::size() const {
+Index MatrixLayer::size() const {
     return w_.size();
 }
 }  // namespace neural_network

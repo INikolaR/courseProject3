@@ -5,20 +5,20 @@
 namespace neural_network {
 class MatrixLayer {
 public:
-    MatrixLayer(const Vector& weights, size_t in, size_t out);
-    MatrixLayer(Random& rnd, size_t in, size_t out);
-    size_t sizeIn() const;
-    size_t sizeOut() const;
-    Vector forward(const Vector& x) const;
-    Vector forwardOnTrain(const Vector& x) const;
-    Vector backwardCalcGradient(Vector& u, const Vector& x, Vector& z) const;
-    void update(const Vector& grad, double step);
+    MatrixLayer(In in, Out out, const std::vector<double>& weights);
+    MatrixLayer(In in, Out out, Random& rnd);
+    Index sizeIn() const;
+    Index sizeOut() const;
+    Matrix forward(const Matrix& x) const;
+    Matrix forwardOnTrain(const Matrix& x) const;
+    Matrix backwardCalcGradient(Matrix& u, const Matrix& x, Matrix& z) const;
+    void update(const Matrix& grad, double step);
     std::string describe() const;
-    size_t size() const;
+    Index size() const;
 
 private:
-    size_t n_;
-    size_t m_;
-    Vector w_;
+    Index n_;
+    Index m_;
+    Matrix w_;
 };
 }  // namespace neural_network

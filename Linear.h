@@ -9,17 +9,16 @@ namespace NSDetail {
 template <class TBase>
 class IAnyLayer : public TBase {
 public:
-    virtual size_t sizeIn() const = 0;
-    virtual size_t sizeOut() const = 0;
-    virtual std::vector<double> forward(const std::vector<double>& x) const = 0;
-    virtual std::vector<double> forwardOnTrain(
-        const std::vector<double>& x) const = 0;
-    virtual std::vector<double> backwardCalcGradient(
-        std::vector<double>& u, const std::vector<double>& x,
-        std::vector<double>& z) const = 0;
-    virtual void update(const std::vector<double>& grad, double step) = 0;
+    virtual Eigen::Index sizeIn() const = 0;
+    virtual Eigen::Index sizeOut() const = 0;
+    virtual Eigen::MatrixXd forward(const Eigen::MatrixXd& x) const = 0;
+    virtual Eigen::MatrixXd forwardOnTrain(const Eigen::MatrixXd& x) const = 0;
+    virtual Eigen::MatrixXd backwardCalcGradient(Eigen::MatrixXd& u,
+                                                 const Eigen::MatrixXd& x,
+                                                 Eigen::MatrixXd& z) const = 0;
+    virtual void update(const Eigen::MatrixXd& grad, double step) = 0;
     virtual std::string describe() const = 0;
-    virtual size_t size() const = 0;
+    virtual Eigen::Index size() const = 0;
 };
 
 template <class TBase, class TObject>
@@ -30,28 +29,28 @@ class CAnyLayerImpl : public TBase {
 public:
     // We need to open all constructors of the base class
     using CBase::CBase;
-    size_t sizeIn() const {
+    Eigen::Index sizeIn() const {
         return CBase::Object().sizeIn();
     }
 
-    size_t sizeOut() const {
+    Eigen::Index sizeOut() const {
         return CBase::Object().sizeOut();
     }
 
-    std::vector<double> forward(const std::vector<double>& x) const {
+    Eigen::MatrixXd forward(const Eigen::MatrixXd& x) const {
         return CBase::Object().forward(x);
     }
 
-    std::vector<double> forwardOnTrain(const std::vector<double>& x) const {
+    Eigen::MatrixXd forwardOnTrain(const Eigen::MatrixXd& x) const {
         return CBase::Object().forwardOnTrain(x);
     }
 
-    std::vector<double> backwardCalcGradient(std::vector<double>& u,
-                                             const std::vector<double>& x,
-                                             std::vector<double>& z) const {
+    Eigen::MatrixXd backwardCalcGradient(Eigen::MatrixXd& u,
+                                         const Eigen::MatrixXd& x,
+                                         Eigen::MatrixXd& z) const {
         return CBase::Object().backwardCalcGradient(u, x, z);
     }
-    void update(const std::vector<double>& grad, double step) {
+    void update(const Eigen::MatrixXd& grad, double step) {
         CBase::Object().update(grad, step);
     }
 
@@ -59,7 +58,7 @@ public:
         return CBase::Object().describe();
     }
 
-    size_t size() const {
+    Eigen::Index size() const {
         return CBase::Object().size();
     }
 };

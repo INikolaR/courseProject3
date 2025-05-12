@@ -1,5 +1,4 @@
 #pragma once
-#include "ActivationFunction.h"
 #include "CustomTypes.h"
 #include "Random.h"
 
@@ -7,23 +6,24 @@ namespace neural_network {
 
 class GivensLayer {
 public:
-    GivensLayer(const Vector& weights, size_t in, size_t out);
-    GivensLayer(Random& rnd, size_t in, size_t out);
-    size_t sizeIn() const;
-    size_t sizeOut() const;
-    Vector forward(const Vector& x) const;
-    Vector forwardOnTrain(const Vector& x) const;
-    Vector backwardCalcGradient(Vector& u, const Vector& x, Vector& z) const;
-    void update(const Vector& grad, double step);
+    GivensLayer(In in, Out out, const std::vector<double>& weights);
+    GivensLayer(In in, Out out, Random& rnd);
+
+    Index sizeIn() const;
+    Index sizeOut() const;
+    Matrix forward(const Matrix& x) const;
+    Matrix forwardOnTrain(const Matrix& x) const;
+    Matrix backwardCalcGradient(Matrix& u, const Matrix& x, Matrix& z) const;
+    void update(const Matrix& grad, double step);
     std::string describe() const;
-    size_t size() const;
+    Index size() const;
 
 private:
-    GivensLayer(const SVD& svd, size_t in, size_t out);
+    GivensLayer(In in, Out out, const SVD& svd);
 
-    size_t n_;
-    size_t m_;
-    size_t min_n_m_;
+    Index n_;
+    Index m_;
+    Index min_n_m_;
     Vector alpha_;
     Vector sigma_;
     Vector beta_;

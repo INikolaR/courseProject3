@@ -4,12 +4,14 @@
 #include <vector>
 
 namespace neural_network {
-using Vector = std::vector<double>;
-using EMatrix = Eigen::MatrixXd;
-using EVector = Eigen::VectorXd;
+using Index = Eigen::Index;
+using Matrix = Eigen::MatrixXd;
+using Vector = Eigen::VectorXd;
+enum In : Index;
+enum Out : Index;
 struct TrainUnit {
-    Vector x;
-    Vector y;
+    Matrix x;
+    Matrix y;
 };
 struct SVD {
     Vector U;
@@ -22,7 +24,8 @@ struct CommonMetrics {
     size_t batch_size;
     size_t current_epoch;
     std::chrono::milliseconds::rep epoch_time_ms;
-    Vector frobenius_norms;
+    Vector mean_frobenius_norms;
+    Vector std_frobenius_norms;
 };
 struct ClassificationReport {
     CommonMetrics common_metrics;
