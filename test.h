@@ -16,14 +16,14 @@ namespace neural_network {
 //                                const std::vector<TrainUnit>& test_dataset,
 //                                LossFunction& test_loss, size_t n_of_epochs,
 //                                int batch_size, Optimizer& optimizer);
-void test_echo();
+// void test_echo();
 // void test_sum();
 // void test_sum_multi_layers();
 // void test_square();
 // void test_mnist();
-// void report_mnist();
-void report_titanic();
-// void report_boston();
+void report_mnist();
+// void report_titanic();
+void report_boston();
 // void run_all_tests();
 void run_all_reports();
 

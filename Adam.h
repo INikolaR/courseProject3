@@ -5,27 +5,41 @@
 #include <vector>
 
 #include "CustomTypes.h"
+#include "DataLoader.h"
+#include "Linear.h"
+#include "LossFunction.h"
+#include "NonLinear.h"
 
 namespace neural_network {
-// class Adam {
-// public:
-//     Adam(std::list<Linear>& linear_layers, double step);
-//     Adam(std::list<Linear>& linear_layers, double step, double beta1,
-//          double beta2, double epsilon);
-//     void update(const std::vector<Vector>& grads);
-//     std::string describe() const;
+class Adam {
+public:
+    using Array = Eigen::ArrayXd;
 
-// private:
-//     std::vector<Vector> zerosInversed(std::list<Linear>& parameters);
+    Adam(double step);
+    Adam(double step, double beta1, double beta2, double epsilon);
 
-//     std::list<Linear>& linear_layers_;
-//     double step_;
-//     double beta1_;
-//     double beta2_;
-//     double beta1_k_;
-//     double beta2_k_;
-//     double epsilon_;
-//     std::vector<Vector> m_;
-//     std::vector<Vector> v_;
-// };
+    Vector fitAndGetMeanGradNorms(
+        const DataLoader& data_loader, const LossFunction& loss,
+        size_t n_of_epochs, size_t batch_size,
+        std::vector<Linear>* linear_layers,
+        std::vector<NonLinear>* non_linear_layers) const;
+    std::string describe() const;
+
+private:
+    Vector trainOneEpochAndGetMeanGradNorms(
+        const DataLoader& data_loader, const LossFunction& loss,
+        size_t batch_size, std::vector<Linear>* linear_layers,
+        std::vector<NonLinear>* non_linear_layers, std::vector<Array>* m,
+        std::vector<Array>* v, double* beta1_cumulative,
+        double* beta2_cumulative) const;
+    void update(const std::vector<Matrix>& grads,
+                std::vector<Linear>* linear_layers, std::vector<Array>* m,
+                std::vector<Array>* v, double* beta1_cumulative,
+                double* beta2_cumulative) const;
+
+    double step_;
+    double beta1_;
+    double beta2_;
+    double epsilon_;
+};
 }  // namespace neural_network

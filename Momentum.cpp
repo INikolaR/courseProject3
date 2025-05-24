@@ -1,42 +1,104 @@
 #include "Momentum.h"
 
+#include <cassert>
+
 #include "VectorOperations.h"
 
 namespace neural_network {
-// Momentum::Momentum(double step, double momentum_step)
-//     : step_(step),
-//       m_(momentum_step),
-//       h_(std::move(zerosInversed(linear_layers_))) {
-// }
+Momentum::Momentum(double step, double momentum_step)
+    : step_(step), momentum_step_(momentum_step) {
+}
 
-// void Momentum::update(const std::vector<Vector>& grads) {
-//     auto it_layers = linear_layers_.rbegin();
-//     auto it_g = grads.begin();
-//     auto it_h = h_.begin();
-//     Vector actual_grad;
-//     for (; it_layers != linear_layers_.rend() && it_g != grads.end();
-//          ++it_layers, ++it_g, ++it_h) {
-//         actual_grad.clear();
-//         actual_grad.reserve(it_g->size());
-//         for (size_t i = 0; i < it_g->size(); ++i) {
-//             actual_grad.emplace_back(m_ * (*it_h)[i] + (1 - m_) * (*it_g)[i]);
-//         }
-//         (*it_layers)->update(actual_grad, step_);
-//     }
-// }
+Vector Momentum::fitAndGetMeanGradNorms(
+    const DataLoader& data_loader, const LossFunction& loss, size_t n_of_epochs,
+    size_t batch_size, std::vector<Linear>* linear_layers,
+    std::vector<NonLinear>* non_linear_layers) const {
+    assert(linear_layers->size() == non_linear_layers->size() &&
+           "bad layer vectors");
+    assert(n_of_epochs > 0 && "bad number of epochs");
+    assert(batch_size > 0 && "bad batch size");
 
-// std::string Momentum::describe() const {
-//     std::stringstream ss;
-//     ss << "Momentum(step=" << step_ << ",m=" << m_ << ")";
-//     return ss.str();
-// }
+    Vector sum_grad_norms = Vector::Zero(linear_layers->size());
+    std::vector<Vector> h;
+    for (size_t i = linear_layers->size(); i > 0; --i) {
+        h.emplace_back(Vector::Zero((*linear_layers)[i - 1]->size()));
+    }
+    for (size_t i = 0; i < n_of_epochs; ++i) {
+        sum_grad_norms += trainOneEpochAndGetMeanGradNorms(
+            data_loader, loss, batch_size, linear_layers, non_linear_layers,
+            &h);
+    }
+    return sum_grad_norms / n_of_epochs;
+}
 
-// std::vector<Vector> Momentum::zerosInversed(std::list<Linear>& linear_layers) {
-//     std::vector<Vector> zeros;
-//     zeros.reserve(linear_layers.size());
-//     for (auto it = linear_layers.rbegin(); it != linear_layers.rend(); ++it) {
-//         zeros.emplace_back(Vector((*it)->size(), 0));
-//     }
-//     return zeros;
-// }
+std::string Momentum::describe() const {
+    std::stringstream ss;
+    ss << "Momentum(step=" << step_ << ",m=" << momentum_step_ << ")";
+    return ss.str();
+}
+
+Vector Momentum::trainOneEpochAndGetMeanGradNorms(
+    const DataLoader& data_loader, const LossFunction& loss, size_t batch_size,
+    std::vector<Linear>* linear_layers,
+    std::vector<NonLinear>* non_linear_layers, std::vector<Vector>* h) const {
+    std::vector<TrainUnit> dataset = data_loader.getDataset(batch_size);
+    Vector sum_grad_norms = Vector::Zero(linear_layers->size());
+    for (size_t i = 0; i < dataset.size(); ++i) {
+        TrainUnit batch = dataset[i];
+        std::vector<Matrix> linear_in;
+        std::vector<Matrix> non_linear_in;
+        Matrix result = batch.x;
+
+        auto linear_it = linear_layers->begin();
+        auto non_linear_it = non_linear_layers->begin();
+        for (; linear_it != linear_layers->end();
+             ++linear_it, ++non_linear_it) {
+            linear_in.emplace_back(result);
+            result = (*linear_it)->forwardOnTrain(result);
+            non_linear_in.emplace_back(result);
+            changeNumberOfRows(result, (*linear_it)->sizeOut());
+            result = non_linear_it->evaluate0(result);
+        }
+
+        Matrix u = loss.evaluate1(result, batch.y);
+        std::vector<Matrix> gradients;
+
+        auto linear_layer_it = linear_layers->rbegin();
+        auto non_linear_layer_it = non_linear_layers->rbegin();
+        auto non_linear_in_it = non_linear_in.rbegin();
+        auto linear_in_it = linear_in.rbegin();
+        for (; linear_layer_it != linear_layers->rend();
+             ++linear_layer_it, ++non_linear_layer_it, ++non_linear_in_it,
+             ++linear_in_it) {
+            changeNumberOfRows(u, (*linear_layer_it)->sizeOut());
+            u = u.array() * non_linear_layer_it
+                                ->evaluate1(non_linear_in_it->block(
+                                    0, 0, u.rows(), u.cols()))
+                                .array();
+            Matrix g =
+                (*linear_layer_it)
+                    ->backwardCalcGradient(u, *linear_in_it, *non_linear_in_it);
+            gradients.emplace_back(g);
+        }
+        for (size_t i = 0; i < gradients.size(); ++i) {
+            sum_grad_norms(sum_grad_norms.rows() - i - 1) +=
+                gradients[i].norm();
+        }
+        update(gradients, linear_layers, h);
+    }
+    return sum_grad_norms / dataset.size();
+}
+
+void Momentum::update(const std::vector<Matrix>& grads,
+                      std::vector<Linear>* linear_layers,
+                      std::vector<Vector>* h) const {
+    auto it_layers = linear_layers->begin();
+    auto it_g = grads.rbegin();
+    auto it_h = h->rbegin();
+    for (; it_layers != linear_layers->end() && it_g != grads.rend();
+         ++it_layers, ++it_g, ++it_h) {
+        *it_h = step_ * *it_g + momentum_step_ * *it_h;
+        (*it_layers)->update(*it_h, 1);
+    }
+}
 }  // namespace neural_network

@@ -12,15 +12,7 @@ HouseholderLayer::HouseholderLayer(In in, Out out,
 }
 
 HouseholderLayer::HouseholderLayer(In in, Out out, Random& rnd)
-    : HouseholderLayer(in, out, rnd.xavier(in, out)) {
-}
-
-Index HouseholderLayer::sizeIn() const {
-    return n_ - 1;
-}
-
-Index HouseholderLayer::sizeOut() const {
-    return m_;
+    : HouseholderLayer(in, out, rnd.generateXavier(in, out)) {
 }
 
 Matrix HouseholderLayer::forward(const Matrix& x) const {
@@ -152,6 +144,14 @@ std::string HouseholderLayer::describe() const {
 
 Index HouseholderLayer::size() const {
     return u_.size() + sigma_.size() + v_.size();
+}
+
+Index HouseholderLayer::sizeIn() const {
+    return n_ - 1;
+}
+
+Index HouseholderLayer::sizeOut() const {
+    return m_;
 }
 
 HouseholderLayer::HouseholderLayer(In in, Out out, const SVD& svd)

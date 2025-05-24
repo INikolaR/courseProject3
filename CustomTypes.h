@@ -18,14 +18,18 @@ struct SVD {
     Vector sigma;
     Vector V;
 };
+struct PrecisionRecallAccuracy {
+    double precision;
+    double recall;
+    double accuracy;
+};
 struct CommonMetrics {
     std::string architecture;
     std::string optimizer;
     size_t batch_size;
-    size_t current_epoch;
-    std::chrono::milliseconds::rep epoch_time_ms;
+    size_t total_epochs;
+    size_t epoch_time_ms;
     Vector mean_frobenius_norms;
-    Vector std_frobenius_norms;
 };
 struct ClassificationReport {
     CommonMetrics common_metrics;
@@ -37,19 +41,13 @@ struct ClassificationReport {
 struct BinaryClassificationReport {
     CommonMetrics common_metrics;
     double train_loss;
-    double train_accuracy;
-    double train_precision;
-    double train_recall;
+    PrecisionRecallAccuracy train_precision_recall_accuracy;
     double test_loss;
-    double test_accuracy;
-    double test_precision;
-    double test_recall;
+    PrecisionRecallAccuracy test_precision_recall_accuracy;
 };
 struct RegressionReport {
     CommonMetrics common_metrics;
     double train_loss;
-    double train_mse;
     double test_loss;
-    double test_mse;
 };
 }  // namespace neural_network

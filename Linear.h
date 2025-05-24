@@ -9,8 +9,6 @@ namespace NSDetail {
 template <class TBase>
 class IAnyLayer : public TBase {
 public:
-    virtual Eigen::Index sizeIn() const = 0;
-    virtual Eigen::Index sizeOut() const = 0;
     virtual Eigen::MatrixXd forward(const Eigen::MatrixXd& x) const = 0;
     virtual Eigen::MatrixXd forwardOnTrain(const Eigen::MatrixXd& x) const = 0;
     virtual Eigen::MatrixXd backwardCalcGradient(Eigen::MatrixXd& u,
@@ -19,6 +17,8 @@ public:
     virtual void update(const Eigen::MatrixXd& grad, double step) = 0;
     virtual std::string describe() const = 0;
     virtual Eigen::Index size() const = 0;
+    virtual Eigen::Index sizeIn() const = 0;
+    virtual Eigen::Index sizeOut() const = 0;
 };
 
 template <class TBase, class TObject>
@@ -29,14 +29,6 @@ class CAnyLayerImpl : public TBase {
 public:
     // We need to open all constructors of the base class
     using CBase::CBase;
-    Eigen::Index sizeIn() const {
-        return CBase::Object().sizeIn();
-    }
-
-    Eigen::Index sizeOut() const {
-        return CBase::Object().sizeOut();
-    }
-
     Eigen::MatrixXd forward(const Eigen::MatrixXd& x) const {
         return CBase::Object().forward(x);
     }
@@ -60,6 +52,14 @@ public:
 
     Eigen::Index size() const {
         return CBase::Object().size();
+    }
+
+    Eigen::Index sizeIn() const {
+        return CBase::Object().sizeIn();
+    }
+
+    Eigen::Index sizeOut() const {
+        return CBase::Object().sizeOut();
     }
 };
 

@@ -17,15 +17,7 @@ MatrixLayer::MatrixLayer(In in, Out out, const std::vector<double>& w)
 }
 
 MatrixLayer::MatrixLayer(In in, Out out, Random& rnd)
-    : MatrixLayer(in, out, rnd.xavier(in, out)) {
-}
-
-Index MatrixLayer::sizeIn() const {
-    return n_ - 1;
-}
-
-Index MatrixLayer::sizeOut() const {
-    return m_;
+    : MatrixLayer(in, out, rnd.generateXavier(in, out)) {
 }
 
 Matrix MatrixLayer::forward(const Matrix& x) const {
@@ -62,5 +54,13 @@ std::string MatrixLayer::describe() const {
 
 Index MatrixLayer::size() const {
     return w_.size();
+}
+
+Index MatrixLayer::sizeIn() const {
+    return n_ - 1;
+}
+
+Index MatrixLayer::sizeOut() const {
+    return m_;
 }
 }  // namespace neural_network

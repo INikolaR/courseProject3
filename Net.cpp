@@ -12,14 +12,15 @@ Net::Net(Linear l, NonLinear f) : in_(l->sizeIn()), out_(l->sizeOut()) {
     non_linear_layers_.emplace_back(std::move(f));
 }
 
-void Net::AddLayer(Linear l, NonLinear f) {
-    assert(l->sizeIn() == out_);
+void Net::addLayer(Linear l, NonLinear f) {
+    assert(l->sizeIn() == out_ && "bad input size of layer");
     out_ = l->sizeOut();
     linear_layers_.emplace_back(std::move(l));
     non_linear_layers_.emplace_back(std::move(f));
 }
 
 Matrix Net::predict(const Matrix& x) const {
+    assert(x.rows() == in_ && "bad size of x");
     auto linear_it = linear_layers_.begin();
     auto non_linear_it = non_linear_layers_.begin();
     Matrix temp = (*linear_it)->forward(x);
@@ -35,13 +36,18 @@ Matrix Net::predict(const Matrix& x) const {
     return temp;
 }
 
-void Net::fit(const DataLoader& data_loader, const LossFunction& loss,
-              size_t n_of_epochs, int batch_size, const Optimizer& optimizer) {
+Vector Net::fitAndGetMeanGradNorms(const DataLoader& data_loader,
+                                   const LossFunction& loss, size_t n_of_epochs,
+                                   size_t batch_size,
+                                   const Optimizer& optimizer) {
     // for (size_t i = 0; i < n_of_epochs; ++i) {
     //     trainOneEpoch(dataset, loss, batch_size, optimizer);
     // }
-    optimizer->fit(data_loader, loss, n_of_epochs, batch_size, &linear_layers_,
-                   &non_linear_layers_);
+    assert(n_of_epochs > 0 && "bad number of epochs");
+    assert(batch_size > 0 && "bad batch size");
+    return optimizer->fitAndGetMeanGradNorms(data_loader, loss, n_of_epochs,
+                                             batch_size, &linear_layers_,
+                                             &non_linear_layers_);
 }
 
 // double Net::loss(const std::vector<TrainUnit>& dataset,
@@ -78,6 +84,10 @@ void Net::fit(const DataLoader& data_loader, const LossFunction& loss,
 //     }
 //     return frobenius_norms;
 // }
+
+size_t Net::getNumOfLayers() const {
+    return linear_layers_.size();
+}
 
 std::string Net::describe() const {
     std::stringstream ss;

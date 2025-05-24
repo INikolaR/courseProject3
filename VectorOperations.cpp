@@ -92,9 +92,6 @@ SVD getHouseholderPerfomance(In in, Out out, const std::vector<double>& m) {
     Matrix u = svd.matrixU();
     Matrix v = svd.matrixV();
     Vector s = svd.singularValues();
-    // std::cout << u << "\n";
-    // std::cout << s << "\n";
-    // std::cout << v << "\n";
     return {getHouseholderDecompose(u), s, getHouseholderDecompose(v)};
 }
 

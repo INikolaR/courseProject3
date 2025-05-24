@@ -8,21 +8,12 @@
 #include "VectorOperations.h"
 
 namespace neural_network {
-
 GivensLayer::GivensLayer(In in, Out out, const std::vector<double>& weights)
     : GivensLayer(in, out, getGivensPerfomance(in, out, weights)) {
 }
 
 GivensLayer::GivensLayer(In in, Out out, Random& rnd)
-    : GivensLayer(in, out, rnd.xavier(in, out)) {
-}
-
-Index GivensLayer::sizeIn() const {
-    return n_ - 1;
-}
-
-Index GivensLayer::sizeOut() const {
-    return m_;
+    : GivensLayer(in, out, rnd.generateXavier(in, out)) {
 }
 
 Matrix GivensLayer::forward(const Matrix& x) const {
@@ -31,11 +22,11 @@ Matrix GivensLayer::forward(const Matrix& x) const {
     Matrix temp = Matrix::Ones(x.rows() + 1, x.cols());
     temp.block(0, 0, x.rows(), x.cols()) = std::move(x);
 
-    std::cout << "=======\n";
-    std::cout << "x =\n" << x << "\n";
-    std::cout << "alpha_ =\n" << alpha_ << "\n";
-    std::cout << "sigma_ =\n" << sigma_ << "\n";
-    std::cout << "beta_ =\n" << beta_ << "\n";
+    // std::cout << "=======\n";
+    // std::cout << "x =\n" << x << "\n";
+    // std::cout << "alpha_ =\n" << alpha_ << "\n";
+    // std::cout << "sigma_ =\n" << sigma_ << "\n";
+    // std::cout << "beta_ =\n" << beta_ << "\n";
 
     size_t beta_index = 0;
     for (size_t col = 0; col < min_n_m_; ++col) {
@@ -139,7 +130,7 @@ void GivensLayer::update(const Matrix& grad, double step) {
     alpha_cos_ = alpha_.array().cos();
     beta_sin_ = beta_.array().sin();
     beta_cos_ = beta_.array().cos();
-    // sigma_ = 2 * 0.001 * (1 / (1 + (-sigma_.array()).exp()) - 0.5) + 1;
+    sigma_ = 2 * 0.01 * (1 / (1 + (-sigma_.array()).exp()) - 0.5) + 1;
 }
 
 std::string GivensLayer::describe() const {
@@ -150,6 +141,14 @@ std::string GivensLayer::describe() const {
 
 Index GivensLayer::size() const {
     return alpha_.size() + sigma_.size() + beta_.size();
+}
+
+Index GivensLayer::sizeIn() const {
+    return n_ - 1;
+}
+
+Index GivensLayer::sizeOut() const {
+    return m_;
 }
 
 GivensLayer::GivensLayer(In in, Out out, const SVD& svd)

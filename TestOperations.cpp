@@ -4,187 +4,227 @@
 #include <iostream>
 
 namespace neural_network {
-// void getPrecisionRecallAccuracy(const Net& net,
-//                                 const std::vector<TrainUnit>& dataset,
-//                                 double& precision, double& recall,
-//                                 double& accuracy) {
-//     assert(!dataset.empty());
-//     double tp = 0;
-//     double tn = 0;
-//     double fp = 0;
-//     double fn = 0;
-//     for (const TrainUnit& train_unit : dataset) {
-//         Vector out = net.predict(train_unit.x);
-//         assert(out.size() == 2);
-//         assert(train_unit.y.size() == 2);
-//         if (out[0] > out[1]) {
-//             if (train_unit.y[0] > train_unit.y[1]) {
-//                 ++tn;
-//             } else {
-//                 ++fn;
-//             }
-//         } else {
-//             if (train_unit.y[0] > train_unit.y[1]) {
-//                 ++fp;
-//             } else {
-//                 ++tp;
-//             }
-//         }
-//     }
-//     precision = tp + fp > 0 ? tp / (tp + fp) : 0;
-//     recall = tp + fn > 0 ? tp / (tp + fn) : 0;
-//     accuracy = (tp + tn) / (tp + tn + fn + fp);
-// }
+PrecisionRecallAccuracy getPrecisionRecallAccuracy(const Net& net,
+                                                   const DataLoader& loader,
+                                                   size_t batch_size) {
+    double tp = 0;
+    double tn = 0;
+    double fp = 0;
+    double fn = 0;
+    for (const TrainUnit& train_unit : loader.getDataset(batch_size)) {
+        Vector out = net.predict(train_unit.x);
+        for (Index i = 0; i < out.cols(); ++i) {
+            if (out.col(i)[0] > out.col(i)[1]) {
+                if (train_unit.y.col(i)[0] > train_unit.y.col(i)[1]) {
+                    ++tn;
+                } else {
+                    ++fn;
+                }
+            } else {
+                if (train_unit.y.col(i)[0] > train_unit.y.col(i)[1]) {
+                    ++fp;
+                } else {
+                    ++tp;
+                }
+            }
+        }
+    }
+    return PrecisionRecallAccuracy{tp + fp > 0 ? tp / (tp + fp) : 0,
+                                   tp + fn > 0 ? tp / (tp + fn) : 0,
+                                   (tp + tn) / (tp + tn + fn + fp)};
+}
 
-// double getMSE(const Net& net, const std::vector<TrainUnit>& dataset) {
-//     assert(!dataset.empty());
-//     double mse = 0;
-//     for (const TrainUnit& train_unit : dataset) {
-//         Vector out = net.predict(train_unit.x);
-//         assert(out.size() == train_unit.y.size());
-//         Vector diff = out - train_unit.y;
-//         mse += dot(diff, diff);
-//     }
-//     return mse / static_cast<double>(dataset.size());
-// }
+double getLoss(const Net& net, const DataLoader& loader,
+               const LossFunction& loss, size_t batch_size) {
+    double actual_loss = 0;
+    size_t n_of_samples = 0;
+    for (const TrainUnit& train_unit : loader.getDataset(batch_size)) {
+        Matrix out = net.predict(train_unit.x);
+        actual_loss += loss.evaluate0(out, train_unit.y);
+        n_of_samples += out.cols();
+    }
+    return actual_loss / static_cast<double>(n_of_samples);
+}
 
-// CommonMetrics measure(Net& net, const std::vector<TrainUnit>& train,
-//                       const LossFunction& loss, size_t batch_size,
-//                       Optimizer& optimizer, size_t current_epoch) {
-//     assert(current_epoch > 0);
-//     std::vector<Vector> norms;
-//     std::chrono::milliseconds::rep time = 0;
-//     for (size_t i = 0; i < current_epoch; ++i) {
-//         auto start = std::chrono::system_clock::now();
-//         Vector norms_on_curr_epoch = net.trainOneEpochWithFrobeniusNorms(
-//             train, loss, batch_size, optimizer);
-//         auto end = std::chrono::system_clock::now();
-//         time +=
-//             std::chrono::duration_cast<std::chrono::milliseconds>(end - start)
-//                 .count();
-//         norms.emplace_back(norms_on_curr_epoch);
-//     }
+double getAccuracy(const Net& net, const DataLoader& loader,
+                   size_t batch_size) {
+    double n_of_correct_answers = 0;
+    size_t n_of_samples = 0;
+    for (const TrainUnit& train_unit : loader.getDataset(batch_size)) {
+        Matrix out = net.predict(train_unit.x);
+        for (Index col = 0; col < out.cols(); ++col) {
+            int maxRowIndexOut, maxRowIndexY;
+            out.col(col).maxCoeff(&maxRowIndexOut);
+            train_unit.y.col(col).maxCoeff(&maxRowIndexY);
+            n_of_correct_answers += maxRowIndexOut == maxRowIndexY;
+        }
+        n_of_samples += out.cols();
+    }
+    return n_of_correct_answers / static_cast<double>(n_of_samples);
+}
 
-//     Vector mean_norms;
-//     for (size_t j = 0; j < norms[0].size(); ++j) {
-//         double s = 0;
-//         for (size_t i = 0; i < norms.size(); ++i) {
-//             s += norms[i][j];
-//         }
-//         mean_norms.emplace_back(s / current_epoch);
-//     }
-//     Vector std_norms;
-//     for (size_t j = 0; j < norms[0].size(); ++j) {
-//         double s = 0;
-//         for (size_t i = 0; i < norms.size(); ++i) {
-//             s += (norms[i][j] - mean_norms[i]) * (norms[i][j] - mean_norms[i]);
-//         }
-//         std_norms.emplace_back(sqrt(s / current_epoch));
-//     }
-//     return CommonMetrics{
-//         std::move(net.describe()),
-//         std::move(optimizer->describe()),
-//         std::move(batch_size),
-//         std::move(current_epoch),
-//         std::move(time / static_cast<long long>(current_epoch)),
-//         std::move(mean_norms),
-//         std::move(std_norms)};
-// }
+CommonMetrics measure(Net& net, const DataLoader& loader,
+                      const LossFunction& loss, size_t n_of_epochs,
+                      size_t batch_size, const Optimizer& optimizer) {
+    assert(batch_size > 0);
+    assert(n_of_epochs > 0);
+    Vector norms = Vector::Zero(net.getNumOfLayers());
+    std::cout << "NUM: " << net.getNumOfLayers() << "\n";
+    auto start = std::chrono::system_clock::now();
+    norms += net.fitAndGetMeanGradNorms(loader, loss, n_of_epochs, batch_size,
+                                        optimizer);
+    auto end = std::chrono::system_clock::now();
 
-// ClassificationReport getClassificationReport(
-//     CommonMetrics common_metrics, const Net& net,
-//     const std::vector<TrainUnit>& train_dataset, const LossFunction& train_loss,
-//     const std::vector<TrainUnit>& test_dataset, const LossFunction& test_loss) {
-//     double train_loss_value = net.loss(train_dataset, train_loss);
-//     double train_accuracy_value = net.accuracy(train_dataset);
-//     double test_loss_value = net.loss(test_dataset, test_loss);
-//     double test_accuracy_value = net.accuracy(test_dataset);
-//     return ClassificationReport{std::move(common_metrics), train_loss_value,
-//                                 train_accuracy_value, test_loss_value,
-//                                 test_accuracy_value};
-// }
+    return CommonMetrics{
+        std::move(net.describe()),
+        std::move(optimizer->describe()),
+        std::move(batch_size),
+        std::move(n_of_epochs),
+        std::move(static_cast<size_t>(
+            std::chrono::duration_cast<std::chrono::milliseconds>(end - start)
+                .count())),
+        std::move(norms / static_cast<long long>(n_of_epochs))};
+}
 
-// BinaryClassificationReport getBinaryClassificationReport(
-//     CommonMetrics common_metrics, const Net& net,
-//     const std::vector<TrainUnit>& train_dataset, const LossFunction& train_loss,
-//     const std::vector<TrainUnit>& test_dataset, const LossFunction& test_loss) {
-//     double train_loss_value = net.loss(train_dataset, train_loss);
-//     double train_accuracy_value = 0;
-//     double train_precision_value = 0;
-//     double train_recall_value = 0;
-//     getPrecisionRecallAccuracy(net, train_dataset, train_precision_value,
-//                                train_recall_value, train_accuracy_value);
-//     double test_loss_value = net.loss(test_dataset, test_loss);
-//     double test_accuracy_value = 0;
-//     double test_precision_value = 0;
-//     double test_recall_value = 0;
-//     getPrecisionRecallAccuracy(net, test_dataset, test_precision_value,
-//                                test_recall_value, test_accuracy_value);
-//     return BinaryClassificationReport{
-//         std::move(common_metrics), train_loss_value,     train_accuracy_value,
-//         train_precision_value,     train_recall_value,   test_loss_value,
-//         test_accuracy_value,       test_precision_value, test_recall_value};
-// }
+ClassificationReport getClassificationReport(CommonMetrics common_metrics,
+                                             const Net& net,
+                                             const DataLoader& train_loader,
+                                             const LossFunction& train_loss,
+                                             const DataLoader& test_loader,
+                                             const LossFunction& test_loss,
+                                             size_t batch_size) {
+    double train_loss_value =
+        getLoss(net, train_loader, train_loss, batch_size);
+    double train_accuracy_value = getAccuracy(net, train_loader, batch_size);
+    double test_loss_value = getLoss(net, test_loader, test_loss, batch_size);
+    double test_accuracy_value = getAccuracy(net, test_loader, batch_size);
+    return ClassificationReport{std::move(common_metrics), train_loss_value,
+                                train_accuracy_value, test_loss_value,
+                                test_accuracy_value};
+}
 
-// RegressionReport getRegressionReport(
-//     CommonMetrics common_metrics, const Net& net,
-//     const std::vector<TrainUnit>& train_dataset, const LossFunction& train_loss,
-//     const std::vector<TrainUnit>& test_dataset, const LossFunction& test_loss) {
-//     double train_loss_value = net.loss(train_dataset, train_loss);
-//     double train_mse_value = getMSE(net, train_dataset);
-//     double test_loss_value = net.loss(test_dataset, test_loss);
-//     double test_mse_value = getMSE(net, test_dataset);
-//     return RegressionReport{std::move(common_metrics), train_loss_value,
-//                             train_mse_value, test_loss_value, test_mse_value};
-// }
+BinaryClassificationReport getBinaryClassificationReport(
+    CommonMetrics common_metrics, const Net& net,
+    const DataLoader& train_loader, const LossFunction& train_loss,
+    const DataLoader& test_loader, const LossFunction& test_loss,
+    size_t batch_size) {
+    double train_loss_value =
+        getLoss(net, train_loader, train_loss, batch_size);
+    PrecisionRecallAccuracy train_pra =
+        getPrecisionRecallAccuracy(net, train_loader, batch_size);
+    double test_loss_value = getLoss(net, test_loader, test_loss, batch_size);
+    PrecisionRecallAccuracy test_pra =
+        getPrecisionRecallAccuracy(net, test_loader, batch_size);
+    return BinaryClassificationReport{std::move(common_metrics),
+                                      train_loss_value, std::move(train_pra),
+                                      test_loss_value, std::move(test_pra)};
+}
 
-// std::string stringPerfomance(const CommonMetrics& common_metrics) {
-//     std::stringstream ss;
-//     ss << "ARCH: " << common_metrics.architecture
-//        << "\nOPTIM: " << common_metrics.optimizer
-//        << "\nbatch_size: " << common_metrics.batch_size
-//        << "\nepoch_number: " << common_metrics.current_epoch
-//        << "\ntime: " << common_metrics.epoch_time_ms / 1000 << "."
-//        << common_metrics.epoch_time_ms % 1000 << "s\nmean norms: ";
-//     for (double norm : common_metrics.mean_frobenius_norms) {
-//         ss << norm << " ";
-//     }
-//     ss << "\nstd norms: ";
-//     for (double norm : common_metrics.std_frobenius_norms) {
-//         ss << norm << " ";
-//     }
-//     ss << "\n";
-//     return ss.str();
-// }
+RegressionReport getRegressionReport(CommonMetrics common_metrics,
+                                     const Net& net,
+                                     const DataLoader& train_loader,
+                                     const LossFunction& train_loss,
+                                     const DataLoader& test_loader,
+                                     const LossFunction& test_loss,
+                                     size_t batch_size) {
+    double train_loss_value =
+        getLoss(net, train_loader, train_loss, batch_size);
+    double test_loss_value = getLoss(net, test_loader, test_loss, batch_size);
+    return RegressionReport{std::move(common_metrics), train_loss_value,
+                            test_loss_value};
+}
 
-// void printReport(const ClassificationReport& report) {
-//     std::cout << "CLASSIFICATION REPORT:\n"
-//               << stringPerfomance(report.common_metrics)
-//               << "train:\n       loss: " << report.train_loss
-//               << "\n       accuracy: " << report.train_accuracy
-//               << "\ntest:\n       loss: " << report.test_loss
-//               << "\n       accuracy: " << report.test_accuracy << "\n\n";
-// }
+std::string getStringPerfomance(const CommonMetrics& common_metrics) {
+    std::stringstream ss;
+    ss << "ARCH: " << common_metrics.architecture
+       << "\nOPTIM: " << common_metrics.optimizer
+       << "\nbatch_size: " << common_metrics.batch_size
+       << "\nepoch_number: " << common_metrics.total_epochs
+       << "\ntime: " << common_metrics.epoch_time_ms / 1000 << "."
+       << common_metrics.epoch_time_ms % 1000 << "s\nmean norms: ";
+    for (Index i = 0; i < common_metrics.mean_frobenius_norms.rows(); ++i) {
+        ss << common_metrics.mean_frobenius_norms[i] << " ";
+    }
+    ss << "\n";
+    return ss.str();
+}
 
-// void printReport(const BinaryClassificationReport& report) {
-//     std::cout << "BINARY CLASSIFICATION REPORT:\n"
-//               << stringPerfomance(report.common_metrics)
-//               << "train:\n       loss: " << report.train_loss
-//               << "\n       accuracy: " << report.train_accuracy
-//               << "\n       precision: " << report.train_precision
-//               << "\n       recall: " << report.train_recall
-//               << "\ntest:\n       loss: " << report.test_loss
-//               << "\n       accuracy: " << report.test_accuracy
-//               << "\n       precision: " << report.test_precision
-//               << "\n       recall: " << report.test_recall << "\n\n";
-// }
+void printReport(const ClassificationReport& report) {
+    std::cout << "CLASSIFICATION REPORT:\n"
+              << getStringPerfomance(report.common_metrics)
+              << "train:\n       loss: " << report.train_loss
+              << "\n       accuracy: " << report.train_accuracy
+              << "\ntest:\n       loss: " << report.test_loss
+              << "\n       accuracy: " << report.test_accuracy << "\n\n";
+}
 
-// void printReport(const RegressionReport& report) {
-//     std::cout << "REGRESSION REPORT:\n"
-//               << stringPerfomance(report.common_metrics)
-//               << "train:\n       loss: " << report.train_loss
-//               << "\n       MSE: " << report.train_mse
-//               << "\ntest:\n       loss: " << report.test_loss
-//               << "\n       MSE: " << report.test_mse << "\n\n";
-// }
+void printReport(const BinaryClassificationReport& report) {
+    std::cout << "BINARY CLASSIFICATION REPORT:\n"
+              << getStringPerfomance(report.common_metrics)
+              << "train:\n       loss: " << report.train_loss
+              << "\n       accuracy: "
+              << report.train_precision_recall_accuracy.accuracy
+              << "\n       precision: "
+              << report.train_precision_recall_accuracy.precision
+              << "\n       recall: "
+              << report.train_precision_recall_accuracy.recall
+              << "\ntest:\n       loss: " << report.test_loss
+              << "\n       accuracy: "
+              << report.test_precision_recall_accuracy.accuracy
+              << "\n       precision: "
+              << report.test_precision_recall_accuracy.accuracy
+              << "\n       recall: "
+              << report.test_precision_recall_accuracy.recall << "\n\n";
+}
+
+void printReport(const RegressionReport& report) {
+    std::cout << "REGRESSION REPORT:\n"
+              << getStringPerfomance(report.common_metrics)
+              << "train:\n       loss: " << report.train_loss
+              << "\ntest:\n       loss: " << report.test_loss << "\n\n";
+}
+
+ClassificationReport getClassificationReportForGivensNets(
+    const std::vector<int>& architecture, std::vector<int> seeds,
+    const DataLoader& train_loader, const DataLoader& test_loader,
+    const LossFunction& train_loss, const LossFunction& test_loss,
+    size_t batch_size, size_t n_of_epochs, const Optimizer& optimizer) {
+    assert(architecture.size() > 1);
+    CommonMetrics metrics;
+    ClassificationReport report;
+    int64_t sum_times = 0;
+    Vector sum_frobenius_norms = Vector::Zero(architecture.size() - 1);
+    double sum_train_loss_value = 0;
+    double sum_test_loss_value = 0;
+    double sum_train_acc_value = 0;
+    double sum_test_acc_value = 0;
+    for (int seed : seeds) {
+        Random rnd(seed);
+        Net net(
+            Linear{GivensLayer(In(architecture[0]), Out(architecture[1]), rnd)},
+            NonLinear::Sigmoid());
+        for (size_t i = 1; i < architecture.size() - 1; ++i) {
+            net.addLayer(Linear{GivensLayer(In(architecture[i]),
+                                            Out(architecture[i + 1]), rnd)},
+                         NonLinear::Sigmoid());
+        }
+        metrics = measure(net, train_loader, train_loss, n_of_epochs,
+                          batch_size, optimizer);
+        report = getClassificationReport(metrics, net, train_loader, train_loss,
+                                         test_loader, test_loss, batch_size);
+        sum_times += metrics.epoch_time_ms;
+        sum_frobenius_norms += metrics.mean_frobenius_norms;
+        sum_train_loss_value += report.train_loss;
+        sum_test_loss_value += report.test_loss;
+        sum_train_acc_value += report.train_accuracy;
+        sum_test_acc_value += report.test_accuracy;
+    }
+    return ClassificationReport{
+        CommonMetrics{metrics.architecture, metrics.optimizer,
+                      metrics.batch_size, metrics.total_epochs,
+                      sum_times / seeds.size(),
+                      sum_frobenius_norms / seeds.size()},
+        sum_train_loss_value / seeds.size(), sum_train_acc_value / seeds.size(),
+        sum_test_loss_value / seeds.size(), sum_test_acc_value / seeds.size()};
+}
 }  // namespace neural_network
