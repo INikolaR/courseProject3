@@ -1,14 +1,5 @@
 #include "test.h"
 
-#include <unistd.h>
-
-#include <cassert>
-#include <chrono>
-#include <fstream>
-#include <iomanip>
-#include <iostream>
-#include <string>
-
 #include "Adam.h"
 #include "Constant.h"
 #include "CustomTypes.h"
@@ -17,7 +8,7 @@
 #include "MatrixLayer.h"
 #include "Momentum.h"
 #include "parser.h"
-#include "TestOperations.h"
+#include "report_metrics.h"
 
 namespace neural_network {
 void test_mnist() {

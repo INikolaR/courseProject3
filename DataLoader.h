@@ -1,4 +1,5 @@
 #pragma once
+
 #include "CustomTypes.h"
 #include "EigenProxyTypes.h"
 

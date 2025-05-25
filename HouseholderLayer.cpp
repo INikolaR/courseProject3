@@ -1,9 +1,8 @@
 #include "HouseholderLayer.h"
 
 #include <cassert>
-#include <iostream>
 
-#include "VectorOperations.h"
+#include "util.h"
 
 namespace neural_network {
 HouseholderLayer::HouseholderLayer(In in, Out out,
@@ -25,8 +24,8 @@ Matrix HouseholderLayer::forward(const Matrix& x) const {
             v_.segment(v_starts_[i], v_starts_[i + 1] - v_starts_[i]), temp,
             n_);
     }
-    changeNumberOfRows(temp, m_);
-    multFirstElemsOfColumnsByVectorElemwise(temp, sigma_);
+    util::changeNumberOfRows(temp, m_);
+    util::multFirstElemsOfColumnsByVectorElemwise(temp, sigma_);
     for (size_t i = u_starts_.size() - 1; i > 0; --i) {
         HouseholderReflection(
             u_.segment(u_starts_[i - 1], u_starts_[i] - u_starts_[i - 1]), temp,
@@ -46,8 +45,8 @@ Matrix HouseholderLayer::forwardOnTrain(const Matrix& x) const {
             v_.segment(v_starts_[i], v_starts_[i + 1] - v_starts_[i]), temp,
             n_);
     }
-    changeNumberOfRows(temp, m_ + n_ - min_n_m_);
-    multFirstElemsOfColumnsByVectorElemwise(temp, sigma_);
+    util::changeNumberOfRows(temp, m_ + n_ - min_n_m_);
+    util::multFirstElemsOfColumnsByVectorElemwise(temp, sigma_);
     for (size_t i = u_starts_.size() - 1; i > 0; --i) {
         HouseholderReflection(
             u_.segment(u_starts_[i - 1], u_starts_[i] - u_starts_[i - 1]), temp,
@@ -60,10 +59,16 @@ Matrix HouseholderLayer::backwardCalcGradient(Matrix& grad_from_next,
                                               const Matrix& x,
                                               Matrix& z) const {
     assert(grad_from_next.rows() == m_ &&
-           "u size should be equal to output size of layer");
+           "grad_from_next.rows() should be equal to output size of layer");
     assert(
         z.rows() == m_ + n_ - min_n_m_ &&
         "z size should be equal to max(input size + 1; output size) of layer");
+    assert(x.rows() == n_ - 1 &&
+           "x.rows() should be equal to input size of layer");
+    assert(grad_from_next.cols() == x.cols() &&
+           "batch size (number of cols) of u and x should be equal");
+    assert(grad_from_next.cols() == z.cols() &&
+           "batch size (number of cols) of u and z should be equal");
     Matrix gradient = Matrix::Zero(u_.size() + sigma_.size() + v_.size(), 1);
     for (size_t i = 0; i < min_n_m_; ++i) {
         Vector curr_u =
@@ -87,16 +92,16 @@ Matrix HouseholderLayer::backwardCalcGradient(Matrix& grad_from_next,
             u_.segment(u_starts_[i], u_starts_[i + 1] - u_starts_[i]),
             grad_from_next, m_);
     }
-    multFirstElemsOfColumnsByVectorElemwise(z,
-                                            sigma_.array().inverse().matrix());
+    util::multFirstElemsOfColumnsByVectorElemwise(
+        z, sigma_.array().inverse().matrix());
     for (Index i = 0; i < min_n_m_; ++i) {
         gradient.col(
             0)[min_n_m_ * (min_n_m_ + 1) / 2 + (m_ - min_n_m_) * min_n_m_ + i] =
             grad_from_next.row(i).dot(z.row(i)) / grad_from_next.cols();
     }
-    multFirstElemsOfColumnsByVectorElemwise(grad_from_next, sigma_);
-    changeNumberOfRows(z, n_);
-    changeNumberOfRows(grad_from_next, n_);
+    util::multFirstElemsOfColumnsByVectorElemwise(grad_from_next, sigma_);
+    util::changeNumberOfRows(z, n_);
+    util::changeNumberOfRows(grad_from_next, n_);
     for (size_t i = min_n_m_; i > 0; --i) {
         assert(v_starts_[i] - (n_ - i + 1) == v_starts_[i - 1]);
         Vector curr_v =
@@ -154,6 +159,48 @@ Index HouseholderLayer::sizeOut() const {
     return m_;
 }
 
+MatrixShape HouseholderLayer::getGradShape() const {
+    return MatrixShape{size(), 1};
+}
+
+void HouseholderLayer::HouseholderReflection(const Vector& u, Matrix& a) {
+    HouseholderReflection(u, a, a.rows());
+}
+
+void HouseholderLayer::HouseholderReflection(const Vector& u, Matrix& a,
+                                             Index a_rows) {
+    Matrix scalar_mults =
+        u.transpose() * a.topRows(a_rows).bottomRows(u.rows());
+    a.topRows(a_rows).bottomRows(u.rows()).noalias() -= 2.0 * u * scalar_mults;
+}
+
+Vector HouseholderLayer::getHouseholderDecompose(Matrix& m) {
+    Vector w((m.cols() * (m.cols() + 1)) / 2 +
+             (m.rows() - m.cols()) * m.cols());
+    Index w_index = 0;
+    for (size_t col = 0; col < m.cols(); ++col) {
+        Vector c = m.col(col);
+        c(col, 0) -= 1;
+        c.normalize();
+        for (size_t i = col; i < m.rows(); ++i) {
+            w[w_index++] = c(i, 0);
+        }
+        m.applyOnTheLeft(Matrix::Identity(c.size(), c.size()) -
+                         2 * c * c.transpose());
+    }
+    assert(w_index == w.rows());
+    return w;
+}
+
+SVD HouseholderLayer::getHouseholderPerfomance(In in, Out out,
+                                               const std::vector<double>& m) {
+    Eigen::JacobiSVD<Matrix> svd = util::getSVD(in, out, std::move(m));
+    Matrix u = svd.matrixU();
+    Matrix v = svd.matrixV();
+    Vector s = svd.singularValues();
+    return {getHouseholderDecompose(u), s, getHouseholderDecompose(v)};
+}
+
 HouseholderLayer::HouseholderLayer(In in, Out out, const SVD& svd)
     : n_(in + 1),
       m_(out),
@@ -175,9 +222,5 @@ HouseholderLayer::HouseholderLayer(In in, Out out, const SVD& svd)
         curr_v_start += n_ - col;
     }
     v_starts_.emplace_back(curr_v_start);
-}
-
-MatrixShape HouseholderLayer::getGradShape() const {
-    return MatrixShape{size(), 1};
 }
 }  // namespace neural_network

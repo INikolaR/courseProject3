@@ -1,6 +1,4 @@
 #pragma once
-#include <list>
-#include <vector>
 
 #include "DataLoader.h"
 #include "Linear.h"

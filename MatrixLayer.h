@@ -1,5 +1,7 @@
 #pragma once
+
 #include "CustomTypes.h"
+#include "EigenProxyTypes.h"
 #include "Random.h"
 
 namespace neural_network {
@@ -10,7 +12,8 @@ public:
 
     Matrix forward(const Matrix& x) const;
     Matrix forwardOnTrain(const Matrix& x) const;
-    Matrix backwardCalcGradient(Matrix& u, const Matrix& x, Matrix& z) const;
+    Matrix backwardCalcGradient(Matrix& grad_from_next, const Matrix& x,
+                                Matrix& z) const;
     void update(const Matrix& grad, double step);
     std::string describe() const;
     Index size() const;

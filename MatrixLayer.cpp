@@ -1,9 +1,8 @@
 #include "MatrixLayer.h"
 
 #include <cassert>
-#include <iostream>
 
-#include "VectorOperations.h"
+#include "util.h"
 
 namespace neural_network {
 MatrixLayer::MatrixLayer(In in, Out out, const std::vector<double>& w)
@@ -31,19 +30,23 @@ Matrix MatrixLayer::forwardOnTrain(const Matrix& x) const {
     return forward(x);
 }
 
-Matrix MatrixLayer::backwardCalcGradient(Matrix& u, const Matrix& x,
-                                         Matrix& z) const {
-    assert(u.rows() == m_ && "u size should be equal to output size of layer");
+Matrix MatrixLayer::backwardCalcGradient(Matrix& grad_from_next,
+                                         const Matrix& x, Matrix& z) const {
+    assert(grad_from_next.rows() == m_ &&
+           "grad_from_next.rows() should be equal to output size of layer");
     assert(x.rows() == n_ - 1 &&
-           "x size should be equal to input size of layer");
-    assert(u.cols() == x.cols() &&
-           "batch size (number of cols) should be equal");
-    assert(u.cols() == z.cols() &&
-           "batch size (number of cols) should be equal");
+           "x.rows() should be equal to input size of layer");
+    assert(z.rows() == m_ && "z size should be equal to output size of layer");
+    assert(
+        grad_from_next.cols() == x.cols() &&
+        "batch size (number of cols) of grad_from_next and x should be equal");
+    assert(
+        grad_from_next.cols() == z.cols() &&
+        "batch size (number of cols) of grad_from_next and z should be equal");
     Matrix grad = Matrix::Zero(m_, n_);
-    grad.block(0, 0, m_, n_ - 1) = u * x.transpose();
-    grad.block(0, n_ - 1, m_, 1) = u.rowwise().sum();
-    u = (w_.transpose() * u).eval();
+    grad.block(0, 0, m_, n_ - 1) = grad_from_next * x.transpose();
+    grad.block(0, n_ - 1, m_, 1) = grad_from_next.rowwise().sum();
+    grad_from_next = (w_.transpose() * grad_from_next).eval();
     return grad;
 }
 

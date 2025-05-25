@@ -1,4 +1,5 @@
 #pragma once
+
 #include "EigenProxyTypes.h"
 
 namespace neural_network {
@@ -15,4 +16,6 @@ struct MatrixShape {
     Index rows;
     Index cols;
 };
+enum In : Index;
+enum Out : Index;
 }  // namespace neural_network

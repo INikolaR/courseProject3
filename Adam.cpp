@@ -1,6 +1,7 @@
 #include <cassert>
 
 #include "Adam.h"
+#include "util.h"
 
 namespace neural_network {
 Adam::Adam(double step)
@@ -65,7 +66,7 @@ Vector Adam::trainOneEpochAndGetMeanGradNorms(
             linear_in.emplace_back(result);
             result = (*linear_it)->forwardOnTrain(result);
             non_linear_in.emplace_back(result);
-            changeNumberOfRows(result, (*linear_it)->sizeOut());
+            util::changeNumberOfRows(result, (*linear_it)->sizeOut());
             result = non_linear_it->evaluate0(result);
         }
 
@@ -79,7 +80,7 @@ Vector Adam::trainOneEpochAndGetMeanGradNorms(
         for (; linear_layer_it != linear_layers->rend();
              ++linear_layer_it, ++non_linear_layer_it, ++non_linear_in_it,
              ++linear_in_it) {
-            changeNumberOfRows(u, (*linear_layer_it)->sizeOut());
+            util::changeNumberOfRows(u, (*linear_layer_it)->sizeOut());
             u = u.array() * non_linear_layer_it
                                 ->evaluate1(non_linear_in_it->block(
                                     0, 0, u.rows(), u.cols()))

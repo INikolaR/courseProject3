@@ -1,11 +1,15 @@
 #pragma once
+
 #include "CustomTypes.h"
+#include "EigenProxyTypes.h"
 #include "Random.h"
 
 namespace neural_network {
 
 class GivensLayer {
 public:
+    using Array = Eigen::ArrayXd;
+
     GivensLayer(In in, Out out, const std::vector<double>& weights);
     GivensLayer(In in, Out out, Random& rnd);
 
@@ -20,18 +24,24 @@ public:
     MatrixShape getGradShape() const;
 
 private:
-    GivensLayer(In in, Out out, const SVD& svd);
+    static void GivensRotation(double angle, Index row, Matrix& v);
+    static void GivensRotation(double sin, double cos, Index row, Matrix& v);
+    static Vector getGivensDecompose(Matrix& m);
+    static SVD getGivensPerfomance(In in, Out out,
+                                   const std::vector<double>& m);
+
+    GivensLayer(In in, Out out, SVD&& svd);
 
     Index n_;
     Index m_;
     Index min_n_m_;
-    Vector alpha_;
-    Vector sigma_;
-    Vector beta_;
-    Vector alpha_sin_;
-    Vector alpha_cos_;
-    Vector beta_sin_;
-    Vector beta_cos_;
+    Array alpha_;
+    Array sigma_;
+    Array beta_;
+    Array alpha_sin_;
+    Array alpha_cos_;
+    Array beta_sin_;
+    Array beta_cos_;
 };
 
 }  // namespace neural_network

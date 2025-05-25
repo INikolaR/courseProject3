@@ -1,5 +1,3 @@
-#include <iostream>
-
 #include "exception.h"
 #include "test.h"
 

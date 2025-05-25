@@ -1,8 +1,8 @@
 #pragma once
-#include <functional>
-#include <vector>
 
-#include "VectorOperations.h"
+#include <functional>
+
+#include "EigenProxyTypes.h"
 
 namespace neural_network {
 

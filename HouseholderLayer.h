@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CustomTypes.h"
+#include "EigenProxyTypes.h"
 #include "Random.h"
 
 namespace neural_network {
@@ -11,7 +12,7 @@ public:
 
     Matrix forward(const Matrix& x) const;
     Matrix forwardOnTrain(const Matrix& x) const;
-    Matrix backwardCalcGradient(Matrix& u, const Matrix& x, Matrix& z) const;
+    Matrix backwardCalcGradient(Matrix& grad_from_next, const Matrix& x, Matrix& z) const;
     void update(const Matrix& grad, double step);
     std::string describe() const;
     Index size() const;
@@ -20,6 +21,12 @@ public:
     MatrixShape getGradShape() const;
 
 private:
+    static void HouseholderReflection(const Vector& u, Matrix& a);
+    static void HouseholderReflection(const Vector& u, Matrix& a, Index a_rows);
+    static Vector getHouseholderDecompose(Matrix& m);
+    static SVD getHouseholderPerfomance(In in, Out out,
+                                        const std::vector<double>& m);
+
     HouseholderLayer(In in, Out out, const SVD& svd);
 
     Index n_;

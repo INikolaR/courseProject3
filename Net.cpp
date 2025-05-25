@@ -1,9 +1,6 @@
 #include "Net.h"
 
 #include <cassert>
-#include <iostream>
-
-#include "VectorOperations.h"
 
 namespace neural_network {
 

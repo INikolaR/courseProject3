@@ -2,7 +2,7 @@
 
 #include <cassert>
 
-#include "VectorOperations.h"
+#include "util.h"
 
 namespace neural_network {
 LossFunction LossFunction::Euclid() {
