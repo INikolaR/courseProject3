@@ -13,7 +13,7 @@
 namespace neural_network {
 class Adam {
 public:
-    using Array = Eigen::ArrayXd;
+    using Array = Eigen::ArrayXXd;
 
     Adam(double step);
     Adam(double step, double beta1, double beta2, double epsilon);

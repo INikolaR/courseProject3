@@ -1,7 +1,5 @@
 #pragma once
-#include <chrono>
 #include <Eigen/Dense>
-#include <vector>
 
 namespace neural_network {
 using Index = Eigen::Index;
@@ -41,13 +39,21 @@ struct ClassificationReport {
 struct BinaryClassificationReport {
     CommonMetrics common_metrics;
     double train_loss;
-    PrecisionRecallAccuracy train_precision_recall_accuracy;
+    double train_precision;
+    double train_recall;
+    double train_accuracy;
     double test_loss;
-    PrecisionRecallAccuracy test_precision_recall_accuracy;
+    double test_precision;
+    double test_recall;
+    double test_accuracy;
 };
 struct RegressionReport {
     CommonMetrics common_metrics;
     double train_loss;
     double test_loss;
+};
+struct MatrixShape {
+    Index rows;
+    Index cols;
 };
 }  // namespace neural_network

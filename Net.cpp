@@ -27,9 +27,7 @@ Matrix Net::predict(const Matrix& x) const {
     temp = non_linear_it->evaluate0(temp);
     ++linear_it;
     ++non_linear_it;
-    for (; linear_it != linear_layers_.end() &&
-           non_linear_it != non_linear_layers_.end();
-         ++linear_it, ++non_linear_it) {
+    for (; linear_it != linear_layers_.end(); ++linear_it, ++non_linear_it) {
         temp = (*linear_it)->forward(temp);
         temp = non_linear_it->evaluate0(temp);
     }
@@ -40,50 +38,12 @@ Vector Net::fitAndGetMeanGradNorms(const DataLoader& data_loader,
                                    const LossFunction& loss, size_t n_of_epochs,
                                    size_t batch_size,
                                    const Optimizer& optimizer) {
-    // for (size_t i = 0; i < n_of_epochs; ++i) {
-    //     trainOneEpoch(dataset, loss, batch_size, optimizer);
-    // }
     assert(n_of_epochs > 0 && "bad number of epochs");
     assert(batch_size > 0 && "bad batch size");
     return optimizer->fitAndGetMeanGradNorms(data_loader, loss, n_of_epochs,
                                              batch_size, &linear_layers_,
                                              &non_linear_layers_);
 }
-
-// double Net::loss(const std::vector<TrainUnit>& dataset,
-//                  const LossFunction& loss) const {
-//     assert(!dataset.empty() && "dataset should not be empty");
-//     double l = 0;
-//     for (const TrainUnit& unit : dataset) {
-//         l += loss.evaluate0(predict(unit.x), unit.y);
-//     }
-//     return l / static_cast<double>(dataset.size());
-// }
-
-// double Net::accuracy(const std::vector<TrainUnit> dataset) const {
-//     assert(!dataset.empty() && "dataset should not be empty");
-//     double correct_answers = 0;
-//     for (const TrainUnit& unit : dataset) {
-//         correct_answers += unit.y[argmax(predict(unit.x))];
-//     }
-//     return correct_answers / static_cast<double>(dataset.size());
-// }
-
-// Vector Net::trainOneEpochWithFrobeniusNorms(
-//     const std::vector<TrainUnit>& dataset, const LossFunction& loss,
-//     int batch_size, Optimizer& optimizer) {
-//     assert(batch_size > 0);
-//     Vector frobenius_norms(linear_layers_.size(), 0);
-//     for (auto it = dataset.begin(); it < dataset.end(); it += batch_size) {
-//         auto end_of_batch =
-//             (it + batch_size < dataset.end() ? it + batch_size :
-//             dataset.end());
-//         trainOneBatchWithAddingFrobeniusNorms(it, end_of_batch, loss,
-//         optimizer,
-//                                               frobenius_norms);
-//     }
-//     return frobenius_norms;
-// }
 
 size_t Net::getNumOfLayers() const {
     return linear_layers_.size();
@@ -102,114 +62,5 @@ std::string Net::describe() const {
     }
     return ss.str();
 }
-
-// std::list<Linear>& Net::linearLayers() {
-//     return linear_layers_;
-// }
-
-// void Net::trainOneEpoch(const std::vector<TrainUnit>& dataset,
-//                         const LossFunction& loss, int batch_size,
-//                         Optimizer& optimizer) {
-//     assert(batch_size > 0);
-//     for (auto it = dataset.begin(); it < dataset.end(); it += batch_size) {
-//         auto end_of_batch =
-//             (it + batch_size < dataset.end() ? it + batch_size :
-//             dataset.end());
-//         trainOneBatch(it, end_of_batch, loss, optimizer);
-//     }
-// }
-
-// void Net::trainOneBatch(std::vector<TrainUnit>::const_iterator begin,
-//                         std::vector<TrainUnit>::const_iterator end,
-//                         const LossFunction& loss, Optimizer& optimizer) {
-//     if (begin == end) {
-//         return;
-//     }
-//     std::vector<Vector> to_update = trainOneUnit(begin->x, begin->y, loss);
-//     for (auto it = begin + 1; it != end; ++it) {
-//         std::vector<Vector> add_to_update = trainOneUnit(it->x, it->y, loss);
-//         addGradients(to_update, add_to_update);
-//     }
-//     double inv_batch_size = 1 / static_cast<double>(end - begin);
-//     for (auto& grad : to_update) {
-//         grad *= inv_batch_size;
-//     }
-//     optimizer->update(to_update);
-// }
-
-// void Net::trainOneBatchWithAddingFrobeniusNorms(
-//     std::vector<TrainUnit>::const_iterator begin,
-//     std::vector<TrainUnit>::const_iterator end, const LossFunction& loss,
-//     Optimizer& optimizer, Vector& frobenius_norms) {
-//     if (begin == end) {
-//         return;
-//     }
-//     std::vector<Vector> to_update = trainOneUnit(begin->x, begin->y, loss);
-//     for (auto it = begin + 1; it != end; ++it) {
-//         std::vector<Vector> add_to_update = trainOneUnit(it->x, it->y, loss);
-//         addGradients(to_update, add_to_update);
-//     }
-//     double inv_batch_size = 1 / static_cast<double>(end - begin);
-//     for (auto& grad : to_update) {
-//         grad *= inv_batch_size;
-//     }
-//     optimizer->update(to_update);
-//     auto it_frobenius_norms = frobenius_norms.begin();
-//     auto it_g = to_update.rbegin();
-//     for (; it_g != to_update.rend(); ++it_g, ++it_frobenius_norms) {
-//         *it_frobenius_norms += dot(*it_g, *it_g);
-//     }
-// }
-
-// std::vector<Vector> Net::trainOneUnit(const Vector& x, const Vector& y,
-//                                       const LossFunction& loss) {
-//     assert(x.size() == in_ && "bad input vector size");
-//     Vector temp(x);
-//     std::vector<Vector> linear_in;
-//     std::vector<Vector> non_linear_in;
-//     linear_in.reserve(linear_layers_.size());
-//     non_linear_in.reserve(non_linear_layers_.size());
-//     auto linear_it = linear_layers_.begin();
-//     auto non_linear_it = non_linear_layers_.begin();
-//     for (; linear_it != linear_layers_.end() &&
-//            non_linear_it != non_linear_layers_.end();
-//          ++linear_it, ++non_linear_it) {
-//         linear_in.emplace_back(temp);
-//         temp = (*linear_it)->forwardOnTrain(temp);
-//         non_linear_in.emplace_back(temp);
-//         temp.resize((*linear_it)->sizeOut());
-//         temp = non_linear_it->evaluate0(temp);
-//     }
-//     Vector u = loss.evaluate1(temp, y);
-
-//     std::vector<Vector> to_update;
-//     to_update.reserve(linear_layers_.size());
-
-//     auto linear_layer_it = linear_layers_.rbegin();
-//     auto non_linear_layer_it = non_linear_layers_.rbegin();
-//     auto non_linear_in_it = non_linear_in.rbegin();
-//     auto linear_in_it = linear_in.rbegin();
-//     for (; linear_layer_it != linear_layers_.rend() &&
-//            non_linear_layer_it != non_linear_layers_.rend() &&
-//            non_linear_in_it != non_linear_in.rend() &&
-//            linear_in_it != linear_in.rend();
-//          ++linear_layer_it, ++non_linear_layer_it, ++non_linear_in_it,
-//          ++linear_in_it) {
-//         u.resize((*linear_layer_it)->sizeOut());
-//         u *= non_linear_layer_it->evaluate1(*non_linear_in_it);
-//         Vector g =
-//             (*linear_layer_it)
-//                 ->backwardCalcGradient(u, *linear_in_it, *non_linear_in_it);
-//         to_update.emplace_back(g);
-//     }
-//     return to_update;
-// }
-
-// void Net::addGradients(std::vector<Vector>& a, const std::vector<Vector>& b)
-// {
-//     for (size_t i = 0; i < std::min(a.size(), b.size()); ++i) {
-//         a[i] += b[i];
-//     }
-// }
 
 }  // namespace neural_network

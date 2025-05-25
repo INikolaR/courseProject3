@@ -19,9 +19,10 @@ Vector Momentum::fitAndGetMeanGradNorms(
     assert(batch_size > 0 && "bad batch size");
 
     Vector sum_grad_norms = Vector::Zero(linear_layers->size());
-    std::vector<Vector> h;
+    std::vector<Array> h;
     for (size_t i = linear_layers->size(); i > 0; --i) {
-        h.emplace_back(Vector::Zero((*linear_layers)[i - 1]->size()));
+        MatrixShape shape = (*linear_layers)[i - 1]->getGradShape();
+        h.emplace_back(Array::Zero(shape.rows, shape.cols));
     }
     for (size_t i = 0; i < n_of_epochs; ++i) {
         sum_grad_norms += trainOneEpochAndGetMeanGradNorms(
@@ -40,7 +41,7 @@ std::string Momentum::describe() const {
 Vector Momentum::trainOneEpochAndGetMeanGradNorms(
     const DataLoader& data_loader, const LossFunction& loss, size_t batch_size,
     std::vector<Linear>* linear_layers,
-    std::vector<NonLinear>* non_linear_layers, std::vector<Vector>* h) const {
+    std::vector<NonLinear>* non_linear_layers, std::vector<Array>* h) const {
     std::vector<TrainUnit> dataset = data_loader.getDataset(batch_size);
     Vector sum_grad_norms = Vector::Zero(linear_layers->size());
     for (size_t i = 0; i < dataset.size(); ++i) {
@@ -91,13 +92,13 @@ Vector Momentum::trainOneEpochAndGetMeanGradNorms(
 
 void Momentum::update(const std::vector<Matrix>& grads,
                       std::vector<Linear>* linear_layers,
-                      std::vector<Vector>* h) const {
+                      std::vector<Array>* h) const {
     auto it_layers = linear_layers->begin();
     auto it_g = grads.rbegin();
     auto it_h = h->rbegin();
     for (; it_layers != linear_layers->end() && it_g != grads.rend();
          ++it_layers, ++it_g, ++it_h) {
-        *it_h = step_ * *it_g + momentum_step_ * *it_h;
+        *it_h = (step_ * *it_g).array() + momentum_step_ * *it_h;
         (*it_layers)->update(*it_h, 1);
     }
 }

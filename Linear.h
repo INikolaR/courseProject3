@@ -19,6 +19,7 @@ public:
     virtual Eigen::Index size() const = 0;
     virtual Eigen::Index sizeIn() const = 0;
     virtual Eigen::Index sizeOut() const = 0;
+    virtual neural_network::MatrixShape getGradShape() const = 0;
 };
 
 template <class TBase, class TObject>
@@ -60,6 +61,10 @@ public:
 
     Eigen::Index sizeOut() const {
         return CBase::Object().sizeOut();
+    }
+
+    neural_network::MatrixShape getGradShape() const {
+        return CBase::Object().getGradShape();
     }
 };
 

@@ -1,4 +1,5 @@
 #include <cassert>
+#include <iostream>
 
 #include "Adam.h"
 
@@ -23,8 +24,9 @@ Vector Adam::fitAndGetMeanGradNorms(
     std::vector<Array> m;
     std::vector<Array> v;
     for (size_t i = linear_layers->size(); i > 0; --i) {
-        m.emplace_back(Array::Zero((*linear_layers)[i - 1]->size()));
-        v.emplace_back(Array::Zero((*linear_layers)[i - 1]->size()));
+        MatrixShape shape = (*linear_layers)[i - 1]->getGradShape();
+        m.emplace_back(Array::Zero(shape.rows, shape.cols));
+        v.emplace_back(Array::Zero(shape.rows, shape.cols));
     }
     double beta1_cum = 1;
     double beta2_cum = 1;
@@ -85,6 +87,9 @@ Vector Adam::trainOneEpochAndGetMeanGradNorms(
             Matrix g =
                 (*linear_layer_it)
                     ->backwardCalcGradient(u, *linear_in_it, *non_linear_in_it);
+            for (double d : g.col(0)) {
+                assert(d == d && "NaN IN GRAD!!!");
+            }
             gradients.emplace_back(g);
         }
         for (size_t i = 0; i < gradients.size(); ++i) {
@@ -103,11 +108,17 @@ void Adam::update(const std::vector<Matrix>& grads,
     auto it_layers = linear_layers->begin();
     auto it_g = grads.rbegin();
     auto it_m = m->rbegin();
-    auto it_v = m->rbegin();
+    auto it_v = v->rbegin();
     for (; it_layers != linear_layers->end() && it_g != grads.rend();
          ++it_layers, ++it_g, ++it_m, ++it_v) {
+        // std::cout << "V===================================:\n" << *it_v <<
+        // "\n";
+        // std::cout << "==================================gradient:\n"
+        //           << *it_g << "\n";
+        // std::cout << "=========V:\n" << *it_v << "\n";
         Array g_array = it_g->array();
         *it_m = beta1_ * *it_m + (1 - beta1_) * g_array;
+        // std::cout << "=========V:\n" << *it_v << "\n";
         *it_v = beta2_ * *it_v + (1 - beta2_) * (g_array.square());
         *beta1_cum *= beta1_;
         *beta2_cum *= beta2_;

@@ -9,7 +9,7 @@ public:
     HouseholderLayer(In in, Out out, const std::vector<double>& weights);
     HouseholderLayer(In in, Out out, Random& rnd);
 
-        Matrix forward(const Matrix& x) const;
+    Matrix forward(const Matrix& x) const;
     Matrix forwardOnTrain(const Matrix& x) const;
     Matrix backwardCalcGradient(Matrix& u, const Matrix& x, Matrix& z) const;
     void update(const Matrix& grad, double step);
@@ -17,6 +17,7 @@ public:
     Index size() const;
     Index sizeIn() const;
     Index sizeOut() const;
+    MatrixShape getGradShape() const;
 
 private:
     HouseholderLayer(In in, Out out, const SVD& svd);

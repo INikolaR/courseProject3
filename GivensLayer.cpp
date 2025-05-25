@@ -21,13 +21,6 @@ Matrix GivensLayer::forward(const Matrix& x) const {
            "size of x should be the same as input size of layer");
     Matrix temp = Matrix::Ones(x.rows() + 1, x.cols());
     temp.block(0, 0, x.rows(), x.cols()) = std::move(x);
-
-    // std::cout << "=======\n";
-    // std::cout << "x =\n" << x << "\n";
-    // std::cout << "alpha_ =\n" << alpha_ << "\n";
-    // std::cout << "sigma_ =\n" << sigma_ << "\n";
-    // std::cout << "beta_ =\n" << beta_ << "\n";
-
     size_t beta_index = 0;
     for (size_t col = 0; col < min_n_m_; ++col) {
         for (size_t row = n_ - 1; row > col; --row, ++beta_index) {
@@ -130,7 +123,8 @@ void GivensLayer::update(const Matrix& grad, double step) {
     alpha_cos_ = alpha_.array().cos();
     beta_sin_ = beta_.array().sin();
     beta_cos_ = beta_.array().cos();
-    sigma_ = 2 * 0.01 * (1 / (1 + (-sigma_.array()).exp()) - 0.5) + 1;
+    // sigma weight clipping around 1
+    // sigma_ = 2 * 0.01 * (1 / (1 + (-sigma_.array()).exp()) - 0.5) + 1;
 }
 
 std::string GivensLayer::describe() const {
@@ -162,6 +156,10 @@ GivensLayer::GivensLayer(In in, Out out, const SVD& svd)
       alpha_cos_(std::move(alpha_.array().cos())),
       beta_sin_(std::move(beta_.array().sin())),
       beta_cos_(std::move(beta_.array().cos())) {
+}
+
+MatrixShape GivensLayer::getGradShape() const {
+    return MatrixShape{size(), 1};
 }
 
 }  // namespace neural_network

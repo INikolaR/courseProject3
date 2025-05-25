@@ -16,7 +16,7 @@ HouseholderLayer::HouseholderLayer(In in, Out out, Random& rnd)
 }
 
 Matrix HouseholderLayer::forward(const Matrix& x) const {
-    assert(x.size() == n_ - 1 &&
+    assert(x.rows() == n_ - 1 &&
            "size of x should be the same as input size of layer");
     Matrix temp = Matrix::Ones(x.rows() + 1, x.cols());
     temp.block(0, 0, x.rows(), x.cols()) = x;
@@ -36,7 +36,7 @@ Matrix HouseholderLayer::forward(const Matrix& x) const {
 }
 
 Matrix HouseholderLayer::forwardOnTrain(const Matrix& x) const {
-    assert(x.size() == n_ - 1 &&
+    assert(x.rows() == n_ - 1 &&
            "size of x should be the same as input size of layer");
     Matrix temp(x.rows() + 1, x.cols());
     temp.block(0, 0, x.rows(), x.cols()) = x;
@@ -77,8 +77,8 @@ Matrix HouseholderLayer::backwardCalcGradient(Matrix& grad_from_next,
             grad_from_next_for_curr_u.transpose() * curr_u;
         Vector z_dot_curr_u = z_for_curr_u.transpose() * curr_u;
         gradient.col(0).segment(u_starts_[i], (m_ - i)) =
-            (-2 * (z_dot_curr_u * grad_from_next_for_curr_u +
-                   grad_from_next_dot_curr_u * z_for_curr_u))
+            (-2 * (grad_from_next_for_curr_u * z_dot_curr_u +
+                   z_for_curr_u * grad_from_next_dot_curr_u))
                     .rowwise()
                     .sum() /
                 z.cols() +
@@ -112,8 +112,8 @@ Matrix HouseholderLayer::backwardCalcGradient(Matrix& grad_from_next,
                                     (m_ - min_n_m_ + 1) * min_n_m_ +
                                     v_starts_[i - 1],
                                 (n_ - (i - 1))) =
-            (-2 * (z_dot_curr_v * grad_from_next_for_curr_v +
-                   grad_from_next_dot_curr_v * z_for_curr_v))
+            (-2 * (grad_from_next_for_curr_v * z_dot_curr_v +
+                   z_for_curr_v * grad_from_next_dot_curr_v))
                     .rowwise()
                     .sum() /
                 z.cols() +
@@ -175,5 +175,9 @@ HouseholderLayer::HouseholderLayer(In in, Out out, const SVD& svd)
         curr_v_start += n_ - col;
     }
     v_starts_.emplace_back(curr_v_start);
+}
+
+MatrixShape HouseholderLayer::getGradShape() const {
+    return MatrixShape{size(), 1};
 }
 }  // namespace neural_network

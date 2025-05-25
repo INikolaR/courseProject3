@@ -3,7 +3,6 @@
 #include <vector>
 
 #include "CustomTypes.h"
-#include "GivensLayer.h"
 #include "LossFunction.h"
 #include "Net.h"
 
@@ -14,6 +13,7 @@ PrecisionRecallAccuracy getPrecisionRecallAccuracy(const Net& net,
 double getLoss(const Net& net, const DataLoader& loader,
                const LossFunction& loss, size_t batch_size);
 double getAccuracy(const Net& net, const DataLoader& loader, size_t batch_size);
+
 CommonMetrics measure(Net& net, const DataLoader& loader,
                       const LossFunction& loss, size_t n_of_epochs,
                       size_t batch_size, const Optimizer& optimizer);
@@ -36,12 +36,61 @@ RegressionReport getRegressionReport(CommonMetrics common_metrics,
                                      const DataLoader& test_dataset,
                                      const LossFunction& test_loss,
                                      size_t batch_size);
+
 std::string getStringPerfomance(const CommonMetrics& common_metrics);
 void printReport(const ClassificationReport& report);
 void printReport(const BinaryClassificationReport& report);
 void printReport(const RegressionReport& report);
 
 ClassificationReport getClassificationReportForGivensNets(
+    const std::vector<int>& architecture, std::vector<int> seeds,
+    const DataLoader& train_loader, const DataLoader& test_loader,
+    const LossFunction& train_loss, const LossFunction& test_loss,
+    size_t batch_size, size_t n_of_epochs, const Optimizer& optimizer);
+
+RegressionReport getRegressionReportForGivensNets(
+    const std::vector<int>& architecture, std::vector<int> seeds,
+    const DataLoader& train_loader, const DataLoader& test_loader,
+    const LossFunction& train_loss, const LossFunction& test_loss,
+    size_t batch_size, size_t n_of_epochs, const Optimizer& optimizer);
+
+BinaryClassificationReport getBinaryClassificationReportForGivensNets(
+    const std::vector<int>& architecture, std::vector<int> seeds,
+    const DataLoader& train_loader, const DataLoader& test_loader,
+    const LossFunction& train_loss, const LossFunction& test_loss,
+    size_t batch_size, size_t n_of_epochs, const Optimizer& optimizer);
+
+ClassificationReport getClassificationReportForMatrixNets(
+    const std::vector<int>& architecture, std::vector<int> seeds,
+    const DataLoader& train_loader, const DataLoader& test_loader,
+    const LossFunction& train_loss, const LossFunction& test_loss,
+    size_t batch_size, size_t n_of_epochs, const Optimizer& optimizer);
+
+RegressionReport getRegressionReportForMatrixNets(
+    const std::vector<int>& architecture, std::vector<int> seeds,
+    const DataLoader& train_loader, const DataLoader& test_loader,
+    const LossFunction& train_loss, const LossFunction& test_loss,
+    size_t batch_size, size_t n_of_epochs, const Optimizer& optimizer);
+
+BinaryClassificationReport getBinaryClassificationReportForMatrixNets(
+    const std::vector<int>& architecture, std::vector<int> seeds,
+    const DataLoader& train_loader, const DataLoader& test_loader,
+    const LossFunction& train_loss, const LossFunction& test_loss,
+    size_t batch_size, size_t n_of_epochs, const Optimizer& optimizer);
+
+ClassificationReport getClassificationReportForHouseholderNets(
+    const std::vector<int>& architecture, std::vector<int> seeds,
+    const DataLoader& train_loader, const DataLoader& test_loader,
+    const LossFunction& train_loss, const LossFunction& test_loss,
+    size_t batch_size, size_t n_of_epochs, const Optimizer& optimizer);
+
+RegressionReport getRegressionReportForHouseholderNets(
+    const std::vector<int>& architecture, std::vector<int> seeds,
+    const DataLoader& train_loader, const DataLoader& test_loader,
+    const LossFunction& train_loss, const LossFunction& test_loss,
+    size_t batch_size, size_t n_of_epochs, const Optimizer& optimizer);
+
+BinaryClassificationReport getBinaryClassificationReportForHouseholderNets(
     const std::vector<int>& architecture, std::vector<int> seeds,
     const DataLoader& train_loader, const DataLoader& test_loader,
     const LossFunction& train_loss, const LossFunction& test_loss,

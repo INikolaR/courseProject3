@@ -17,6 +17,7 @@ public:
     Index size() const;
     Index sizeIn() const;
     Index sizeOut() const;
+    MatrixShape getGradShape() const;
 
 private:
     GivensLayer(In in, Out out, const SVD& svd);

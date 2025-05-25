@@ -16,6 +16,7 @@ public:
     Index size() const;
     Index sizeIn() const;
     Index sizeOut() const;
+    MatrixShape getGradShape() const;
 
 private:
     Index n_;

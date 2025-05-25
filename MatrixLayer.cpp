@@ -23,7 +23,8 @@ MatrixLayer::MatrixLayer(In in, Out out, Random& rnd)
 Matrix MatrixLayer::forward(const Matrix& x) const {
     assert(x.rows() == n_ - 1 &&
            "x.rows() should be the same as input size of layer");
-    return w_.block(0, 0, w_.rows(), w_.cols() - 1) * x + w_.col(w_.cols() - 1);
+    return (w_.block(0, 0, w_.rows(), w_.cols() - 1) * x).colwise() +
+           w_.col(w_.cols() - 1);
 }
 
 Matrix MatrixLayer::forwardOnTrain(const Matrix& x) const {
@@ -35,10 +36,14 @@ Matrix MatrixLayer::backwardCalcGradient(Matrix& u, const Matrix& x,
     assert(u.rows() == m_ && "u size should be equal to output size of layer");
     assert(x.rows() == n_ - 1 &&
            "x size should be equal to input size of layer");
+    assert(u.cols() == x.cols() &&
+           "batch size (number of cols) should be equal");
+    assert(u.cols() == z.cols() &&
+           "batch size (number of cols) should be equal");
     Matrix grad = Matrix::Zero(m_, n_);
-    grad.block(0, 0, m_, n_ - 1) = u.transpose() * x.transpose();
-    grad.block(0, n_ - 1, m_, 1) = u.transpose();
-    u *= w_;
+    grad.block(0, 0, m_, n_ - 1) = u * x.transpose();
+    grad.block(0, n_ - 1, m_, 1) = u.rowwise().sum();
+    u = (w_.transpose() * u).eval();
     return grad;
 }
 
@@ -62,5 +67,9 @@ Index MatrixLayer::sizeIn() const {
 
 Index MatrixLayer::sizeOut() const {
     return m_;
+}
+
+MatrixShape MatrixLayer::getGradShape() const {
+    return MatrixShape{m_, n_};
 }
 }  // namespace neural_network
