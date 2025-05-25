@@ -11,11 +11,6 @@ namespace neural_network {
 
 class Net {
 public:
-    struct TrainTestLoaders {
-        DataLoader train_dataloader;
-        DataLoader test_dataloader;
-    };
-
     Net(Linear l, NonLinear f);
     void addLayer(Linear l, NonLinear f);
     Matrix predict(const Matrix& x) const;

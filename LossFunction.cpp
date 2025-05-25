@@ -22,10 +22,8 @@ LossFunction LossFunction::Manhattan() {
         [](const Matrix& x, const Matrix& y) { return (x - y).cwiseSign(); });
 }
 
-LossFunction::LossFunction(
-    std::function<double(const Matrix&, const Matrix&)>&& f0,
-    std::function<Matrix(const Matrix&, const Matrix&)>&& f1)
-    : f0_(f0), f1_(f1) {
+LossFunction::LossFunction(DistanceFunc f0, GradientFunc f1)
+    : f0_(std::move(f0)), f1_(std::move(f1)) {
     assert(f0_ && "f0 should be not null");
     assert(f1_ && "f1 should be not null");
 }

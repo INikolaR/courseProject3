@@ -1,10 +1,10 @@
 #include <cassert>
-#include <iostream>
 
 #include "Adam.h"
 
 namespace neural_network {
-Adam::Adam(double step) : Adam(step, 0.9, 0.999, 1e-8) {
+Adam::Adam(double step)
+    : Adam(step, beta1_default, beta2_default, epsilon_default) {
 }
 
 Adam::Adam(double step, double beta1, double beta2, double epsilon)
@@ -111,14 +111,8 @@ void Adam::update(const std::vector<Matrix>& grads,
     auto it_v = v->rbegin();
     for (; it_layers != linear_layers->end() && it_g != grads.rend();
          ++it_layers, ++it_g, ++it_m, ++it_v) {
-        // std::cout << "V===================================:\n" << *it_v <<
-        // "\n";
-        // std::cout << "==================================gradient:\n"
-        //           << *it_g << "\n";
-        // std::cout << "=========V:\n" << *it_v << "\n";
         Array g_array = it_g->array();
         *it_m = beta1_ * *it_m + (1 - beta1_) * g_array;
-        // std::cout << "=========V:\n" << *it_v << "\n";
         *it_v = beta2_ * *it_v + (1 - beta2_) * (g_array.square());
         *beta1_cum *= beta1_;
         *beta2_cum *= beta2_;

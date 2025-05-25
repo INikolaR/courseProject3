@@ -6,19 +6,21 @@
 namespace neural_network {
 
 class LossFunction {
+    using DistanceFunc = std::function<double(const Matrix&, const Matrix&)>;
+    using GradientFunc = std::function<Matrix(const Matrix&, const Matrix&)>;
+
 public:
     static LossFunction Euclid();
     static LossFunction Manhattan();
 
-    LossFunction(std::function<double(const Matrix&, const Matrix&)>&& f0,
-                 std::function<Matrix(const Matrix&, const Matrix&)>&& f1);
+    LossFunction(DistanceFunc f0, GradientFunc f1);
 
     double evaluate0(const Matrix& x, const Matrix& y) const;
     Matrix evaluate1(const Matrix& x, const Matrix& y) const;
 
 private:
-    std::function<double(const Matrix&, const Matrix&)> f0_;
-    std::function<Matrix(const Matrix&, const Matrix&)> f1_;
+    DistanceFunc f0_;
+    GradientFunc f1_;
 };
 
 }  // namespace neural_network

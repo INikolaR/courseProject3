@@ -1,5 +1,6 @@
 #pragma once
 #include "CustomTypes.h"
+#include "EigenProxyTypes.h"
 
 namespace neural_network {
 class DataLoader {
@@ -13,5 +14,10 @@ public:
 private:
     Matrix x_;
     Matrix y_;
+};
+
+struct TrainTestLoaders {
+    DataLoader train_dataloader;
+    DataLoader test_dataloader;
 };
 }  // namespace neural_network

@@ -7,6 +7,43 @@
 #include "Net.h"
 
 namespace neural_network {
+struct PrecisionRecallAccuracy {
+    double precision;
+    double recall;
+    double accuracy;
+};
+struct CommonMetrics {
+    std::string architecture;
+    std::string optimizer;
+    size_t batch_size;
+    size_t total_epochs;
+    size_t epoch_time_ms;
+    Vector mean_frobenius_norms;
+};
+struct ClassificationReport {
+    CommonMetrics common_metrics;
+    double train_loss;
+    double train_accuracy;
+    double test_loss;
+    double test_accuracy;
+};
+struct BinaryClassificationReport {
+    CommonMetrics common_metrics;
+    double train_loss;
+    double train_precision;
+    double train_recall;
+    double train_accuracy;
+    double test_loss;
+    double test_precision;
+    double test_recall;
+    double test_accuracy;
+};
+struct RegressionReport {
+    CommonMetrics common_metrics;
+    double train_loss;
+    double test_loss;
+};
+
 PrecisionRecallAccuracy getPrecisionRecallAccuracy(const Net& net,
                                                    const DataLoader& dataset,
                                                    size_t batch_size);

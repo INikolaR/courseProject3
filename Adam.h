@@ -1,11 +1,10 @@
 #pragma once
 
-#include <list>
 #include <string>
 #include <vector>
 
-#include "CustomTypes.h"
 #include "DataLoader.h"
+#include "EigenProxyTypes.h"
 #include "Linear.h"
 #include "LossFunction.h"
 #include "NonLinear.h"
@@ -36,6 +35,10 @@ private:
                 std::vector<Linear>* linear_layers, std::vector<Array>* m,
                 std::vector<Array>* v, double* beta1_cumulative,
                 double* beta2_cumulative) const;
+
+    static constexpr double beta1_default = 0.9;
+    static constexpr double beta2_default = 0.999;
+    static constexpr double epsilon_default = 1e-8;
 
     double step_;
     double beta1_;
