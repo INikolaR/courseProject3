@@ -16,7 +16,7 @@ ADD_LIBRARY(lib STATIC ${SOURCES})
 ADD_EXECUTABLE(CourseProject main.cpp)
 TARGET_LINK_LIBRARIES(CourseProject lib)
 
-ADD_EXECUTABLE(test_defaults tests/Test.cpp)
+ADD_EXECUTABLE(test_defaults tests/main.cpp tests/MatrixLayerTest.cpp tests/LossFunctionTest.cpp tests/NonLinearTest.cpp tests/GivensLayerTest.cpp tests/HouseholderLayerTest.cpp tests/NetTest.cpp)
 TARGET_INCLUDE_DIRECTORIES(test_defaults PUBLIC ${CMAKE_SOURCE_DIR})
 TARGET_LINK_LIBRARIES(test_defaults gtest gtest_main lib)
 ADD_TEST(NAME test_defaults COMMAND test_defaults)
